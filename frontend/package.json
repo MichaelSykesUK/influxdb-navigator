@@ -1,0 +1,20 @@
+{
+    "name": "influxdb-workbook-frontend",
+    "version": "1.0.0",
+    "description": "Frontend for the InfluxDB Code Workbook",
+    "main": "index.html",
+    "scripts": {
+        "start": "http-server",
+        "serve": "npm run start"
+    },
+    "keywords": [],
+    "author": "Your Name",
+    "license": "MIT",
+    "type": "commonjs",
+    "devDependencies": {
+        "http-server": "^14.1.1"
+    },
+    "dependencies": {
+        "choices.js": "^11.0.3"
+    }
+}

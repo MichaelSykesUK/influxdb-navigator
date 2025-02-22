@@ -1,0 +1,592 @@
+/*==============================================================================
+   Base Reset and Global Styles
+==============================================================================*/
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: normal;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+}
+
+/* Headings use 12px and are not bold */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: normal;
+  align-items: center;
+  font-size: 12px;
+  margin: 0;
+}
+
+/*==============================================================================
+   Layout Containers
+==============================================================================*/
+#container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+#whiteboard {
+  position: relative;
+  background: #f7f7f7;
+  border-bottom: 1px solid #ddd;
+  width: 100%;
+  height: 50%;
+  overflow: hidden;
+}
+
+#canvasSVG {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.divider.horizontal {
+  height: 5px;
+  width: 100%;
+  background: #ccc;
+  cursor: ns-resize;
+}
+
+#terminal {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 50%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Left Terminal */
+#leftTerminal {
+  width: 30%;
+  height: 100%;
+  background: #f9f9f9;
+  display: flex;
+  flex-direction: column;
+  min-width: 500px;
+}
+
+#leftTerminal .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: #eee;
+  border-bottom: 1px solid #ddd;
+  height: 28px;
+  box-sizing: border-box;
+}
+
+#navigatorHeader {
+  font-size: 12px;
+  margin-right: 10px;
+  padding: 4px;
+}
+
+/* Left terminal run button */
+#runButton {
+  background: none;
+  border: none;
+  color: #007acc;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 5px;
+  display: flex;
+  align-items: center;
+  transition: color 0.3s ease, background-color 0.3s ease;
+}
+#runButton:hover svg {
+  fill: #008000 !important;
+}
+
+/* Right Terminal */
+#rightTerminal {
+  width: 70%;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 10;
+}
+
+#rightTerminal .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: #eee;
+  border-bottom: 1px solid #ddd;
+  height: 28px;
+}
+
+#tableHeader {
+  flex-grow: 1;
+  white-space: nowrap;
+}
+
+/* Header Buttons */
+.header-buttons {
+  display: flex;
+  align-items: center;
+}
+.header-buttons button {
+  background: none;
+  border: none;
+  color: #007acc;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 5px;
+  margin-left: 5px;
+  display: flex;
+  align-items: center;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+.header-buttons button:hover {
+  color: #008000;
+}
+.header-buttons button:hover svg {
+  fill: #008000 !important;
+}
+
+/* Table container */
+#tableContainer {
+  flex: 1;
+  padding: 10px;
+  overflow: auto;
+  background: #fff;
+  text-align: left;
+}
+
+/* Vertical divider */
+.divider.vertical {
+  width: 5px;
+  background: #ccc;
+  cursor: ew-resize;
+  flex-shrink: 0;
+}
+
+/*==============================================================================
+   Form Elements
+==============================================================================*/
+#queryForm,
+#plotForm,
+#joinForm,
+#sqlEditor {
+  display: none;
+  margin: 10px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
+
+.form-group label {
+  margin-bottom: 4px;
+}
+
+/* Input fields and dropdowns */
+.form-group input,
+.form-group select,
+.sql-row input,
+.sql-row select {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 12px !important;
+  color: #000;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  height: 30px !important;
+  padding: 5px;
+}
+
+input::placeholder,
+select::placeholder {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 12px !important;
+  
+}
+
+/*----------------------------------------------------------------------------
+   Custom Dropdowns (shared styling)
+----------------------------------------------------------------------------*/
+.custom-dropdown {
+  position: relative;
+  display: inline-block;
+  height: 30px;
+  background-color: #fff;
+}
+
+.custom-dropdown button {
+  width: 100%;
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #000;
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+  height: 30px;
+}
+
+/* New dropdowns for transform editor: force white background and standard border */
+.select-dropdown button,
+.where-dropdown button {
+  width: 200px !important;
+}
+
+.table-dropdown-menu,
+.select-dropdown-menu,
+.where-dropdown-menu,
+.plot-dropdown-menu {
+  position: absolute;
+  top: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  background: #fff !important;
+  border: 1px solid #ddd !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+  max-height: 250px !important;
+  overflow-y: auto !important;
+  z-index: 500 !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.table-dropdown-menu .dropdown-search,
+.select-dropdown-menu .dropdown-search,
+.where-dropdown-menu .dropdown-search,
+.plot-dropdown-menu .dropdown-search {
+  width: 100% !important;
+  padding: 5px;
+  border: none;
+  border-bottom: 1px solid #ddd;
+  font-size: 12px !important;
+  font-family: 'Inter', sans-serif !important;
+}
+.table-dropdown-menu .table-option,
+.select-dropdown-menu .select-option,
+.where-dropdown-menu .where-option,
+.plot-dropdown-menu .plot-option {
+  padding: 5px !important;
+  cursor: pointer !important;
+  font-size: 12px !important;
+  height: 30px !important;
+  line-height: 30px !important;
+  white-space: nowrap !important;
+  align-items: center !important;
+  z-index: 1000 !important;
+}
+
+.table-dropdown-menu .table-option:hover,
+.select-dropdown-menu .select-option:hover,
+.where-dropdown-menu .where-option:hover,
+.operator-dropdown-menu .operator-option:hover,
+.plot-dropdown-menu .plot-ooption:hover,
+.join-dropdown-menu .join-option:hover {
+  background-color: #f0f8ff;
+  color: #007acc;
+}
+
+/* Operator dropdown menu: now set to 100% width of its container and a high z-index */
+.operator-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  width: 100% !important;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  z-index: 2000;
+}
+.operator-dropdown-menu .operator-option {
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  height: 30px;
+  line-height: 30px;
+  white-space: nowrap;
+}
+
+/* Join dropdown menu */
+.join-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  width: 100% !important;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+.join-dropdown-menu .join-option {
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  height: 30px;
+  line-height: 30px;
+  white-space: nowrap;
+}
+
+/*----------------------------------------------------------------------------
+   SQL Editor Row Layout
+----------------------------------------------------------------------------*/
+.sql-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+.sql-row label {
+  width: 60px !important;
+}
+.sql-row #selectClause,
+.sql-row #whereColumn {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+/* InfluxDB Editor Styling */
+#codeEditorText {
+  width: 100%;
+  border: none;
+  resize: none;
+  overflow: visible;
+  background-color: transparent;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: normal;
+  padding: 0;
+  margin: 10px;
+}
+
+/*----------------------------------------------------------------------------
+   Box Styling
+----------------------------------------------------------------------------*/
+.box {
+  position: absolute;
+  width: 150px;
+  height: 100px;
+  background: #f1f1f1;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: move;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: border-color 0.2s ease;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  z-index: 2;
+}
+.box:hover {
+  border-color: #deb100;
+}
+.box.selected {
+  border-color: #007acc;
+}
+.box.selected:hover {
+  border-color: #deb100;
+}
+.box .box-title {
+  text-align: center;
+  margin-bottom: 5px;
+}
+
+/*----------------------------------------------------------------------------
+   Buttons
+----------------------------------------------------------------------------*/
+.plot-btn,
+.transform-btn,
+.join-btn,
+.query-btn,
+.minus-btn {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: #007acc;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+.inline-plus-btn {
+  position: relative;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 8px !important;
+  margin-left: 5px;
+  background: #007acc;
+  color: #fff;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+.inline-plus-btn2 {
+  position: relative;
+  width: 35px !important;
+  height: 20px !important;
+  border-radius: 5px !important;
+  margin-left: 5px;
+  background: #007acc;
+  color: #fff;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+/* Ensure plus/minus buttons (including inline ones) turn green on hover */
+.plot-btn:hover,
+.transform-btn:hover,
+.join-btn:hover,
+.query-btn:hover,
+.minus-btn:hover,
+.inline-plus-btn:hover,
+.inline-plus-btn2:hover {
+  background-color: #00985b;
+}
+
+.query-btn {
+  bottom: 5px;
+  right: 5px;
+}
+.plot-btn {
+  bottom: 5px;
+  right: 5px;
+}
+.transform-btn {
+  top: 5px;
+  right: 5px;
+}
+.minus-btn {
+  bottom: 5px;
+  left: 5px;
+}
+.join-btn {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: #007acc;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.2s ease;
+  top: 5px;
+  right: 5px;
+}
+.join-btn.active {
+  background: #c00000;
+  animation: pulsate 1s infinite;
+}
+
+/* Remove condition button */
+.removeWhereBtn {
+  background: #007acc;
+  color: #fff;
+  border: none;
+  border-radius: 25%;
+  width: 20px; /* Increased size for better appearance */
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px; /* Adjust size if needed */
+  padding: 0;
+  transition: background-color 0.2s ease;
+}
+.removeWhereBtn:hover {
+  background-color: #00985b;
+}
+
+/*----------------------------------------------------------------------------
+   Advanced/Basic Toggle Button
+----------------------------------------------------------------------------*/
+.advanced-btn {
+  background: #007acc;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 5px;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-bottom: 10px;
+}
+.advanced-btn:hover {
+  background: #00985b;
+}
+
+/*----------------------------------------------------------------------------
+   Table Display
+----------------------------------------------------------------------------*/
+table th,
+table td {
+  border: 1px solid #ddd;
+  padding: 4px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+/*----------------------------------------------------------------------------
+   Animations
+----------------------------------------------------------------------------*/
+.spinner {
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #007acc;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+  margin: auto;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes pulsate {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}

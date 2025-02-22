@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>InfluxDB Code Workbook</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- CodeMirror Styles -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/addon/hint/show-hint.min.css">
+</head>
+<body>
+  <div id="container">
+    <!-- Whiteboard (Canvas) -->
+    <div id="whiteboard">
+      <svg id="canvasSVG"></svg>
+    </div>
+    <!-- Horizontal divider -->
+    <div id="horizontalDivider" class="divider horizontal"></div>
+    <!-- Terminal -->
+    <div id="terminal">
+      <!-- Left Terminal Panel: Editors -->
+      <div id="leftTerminal">
+        <div class="header">
+          <h3 id="navigatorHeader">Navigator:</h3>
+          <button id="runButton" title="Run">
+            <!-- Run Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#007acc" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </button>
+        </div>
+        <div id="codeEditorContainer">
+          <!-- InfluxDB Navigator Editor -->
+          <textarea id="codeEditorText" rows="1">Run to show available tables</textarea>
+          
+          <!-- Query Editor -->
+          <div id="queryForm" style="display:none;">
+            <!-- Table Dropdown -->
+            <div class="form-group">
+              <label for="tableQueryDisplay">Table:</label>
+              <div class="custom-dropdown table-dropdown">
+                <button id="tableQueryButton" aria-haspopup="true" aria-expanded="false">
+                  <span id="tableQueryDisplay">Select a table</span>
+                </button>
+                <div class="table-dropdown-menu" id="tableDropdownMenu">
+                  <!-- A search input is injected here by script.js -->
+                </div>
+              </div>
+            </div>
+            <!-- Start Time Field -->
+            <div class="form-group">
+              <label for="startTime">Start Time:</label>
+              <input type="text" id="startTime" placeholder="YYYY-MM-DDTHH:MM:SSZ">
+            </div>
+            <!-- End Time Field -->
+            <div class="form-group">
+              <label for="endTime">End Time:</label>
+              <input type="text" id="endTime" placeholder="YYYY-MM-DDTHH:MM:SSZ">
+            </div>
+          </div>
+
+          <!-- Transform Editor -->
+          <div id="sqlEditor" style="display:none;">
+            <button id="toggleAdvanced" class="advanced-btn">Advanced</button>
+            <!-- Basic SQL Editor (Row-Based) with custom dropdowns -->
+            <div id="sqlBasicEditor">
+              <div class="sql-row">
+                <label for="selectDisplay">SELECT:</label>
+                <!-- Custom dropdown for SELECT clause -->
+                <div class="custom-dropdown select-dropdown">
+                  <button id="selectButton" aria-haspopup="true" aria-expanded="false">
+                    <span id="selectDisplay">Select columns</span>
+                  </button>
+                  <div id="selectDropdownMenu" class="select-dropdown-menu" style="display:none;">
+                    <!-- Options populated dynamically -->
+                  </div>
+                </div>
+              </div>
+              <div class="sql-row">
+                <label for="whereDisplay">WHERE:</label>
+                <!-- Custom dropdown for WHERE column -->
+                <div class="custom-dropdown where-dropdown">
+                  <button id="whereButton" aria-haspopup="true" aria-expanded="false">
+                    <span id="whereDisplay">Select columns</span>
+                  </button>
+                  <div id="whereDropdownMenu" class="where-dropdown-menu" style="display:none;">
+                    <!-- Options populated dynamically -->
+                  </div>
+                </div>
+                <div class="custom-dropdown operator-dropdown">
+                  <button id="operatorButton" aria-haspopup="true" aria-expanded="false">
+                    <span id="operatorDisplay">=</span>
+                  </button>
+                  <div class="operator-dropdown-menu" style="display:none;">
+                    <div class="operator-option" data-value="=">
+                      <div class="operator-name">=</div>
+                    </div>
+                    <div class="operator-option" data-value="<">
+                      <div class="operator-name">&lt;</div>
+                    </div>
+                    <div class="operator-option" data-value=">">
+                      <div class="operator-name">&gt;</div>
+                    </div>
+                  </div>
+                </div>
+                <input type="text" id="whereValue" placeholder='e.g. "BAT1"'>
+              </div>
+              <!-- Row for AND/OR buttons -->
+              <div class="sql-row where-additional-buttons" style="margin-top:5px;">
+                <label style="width:60px;"></label>
+                <button id="addWhereAnd" class="inline-plus-btn2" title="Add WHERE condition with AND">AND</button>
+                <button id="addWhereOr" class="inline-plus-btn2" title="Add WHERE condition with OR">OR</button>
+              </div>
+              <div id="additionalWhereContainer">
+                <!-- Additional WHERE rows will be added here -->
+              </div>
+            </div>
+            <!-- Advanced SQL Editor -->
+            <div id="sqlAdvancedEditor" style="display:none;">
+              <label for="sqlEditorText">Enter SQL statement below:</label>
+              <textarea id="sqlEditorText" rows="10" spellcheck="false">SELECT * FROM df</textarea>
+            </div>
+          </div>
+
+          <!-- Plot Editor -->
+          <div id="plotForm" style="display:none;">
+            <!-- X Dropdown -->
+            <div class="form-group">
+              <label for="xSelectDisplay">X Values:</label>
+              <div class="custom-dropdown plot-dropdown">
+                <button id="xSelectButton" aria-haspopup="true" aria-expanded="false">
+                  <span id="xSelectDisplay">Select a column</span>
+                </button>
+                <div class="plot-dropdown-menu" id="xSelectDropdownMenu">
+                  <!-- A search input is injected here by script.js -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Y Dropdown -->
+            <div id="ySelectContainer">
+              <div class="y-values-wrapper">
+                <!-- Y Dropdown 1 -->
+                <div class="form-group y-select-group">
+                  <label for="ySelectDisplay_1">Y Values:</label>
+                  <div class="custom-dropdown plot-dropdown">
+                    <button id="ySelectButton_1" aria-haspopup="true" aria-expanded="false">
+                      <span id="ySelectDisplay_1">Select a column</span>
+                    </button>
+                    <div class="plot-dropdown-menu" id="ySelectDropdownMenu_1">
+                      <!-- A search input is injected here by script.js -->
+                    </div>
+                  </div>
+                </div>
+                <!-- Additional Y dropdowns will be added here -->
+              </div>
+              <!-- Add another Y values button -->
+              <button id="addYBtn" class="inline-plus-btn" title="Add another Y Value">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#ffffff" viewBox="0 0 24 24">
+                  <path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Join Form Editor -->
+          <div id="joinForm" style="display:none;">
+            <div class="form-group">
+              <label for="joinTypeDisplay">Join Type:</label>
+              <div class="custom-dropdown join-dropdown">
+                <button id="joinTypeButton" aria-haspopup="true" aria-expanded="false">
+                  <span id="joinTypeDisplay">Inner Join</span>
+                </button>
+                <div class="join-dropdown-menu">
+                  <div class="join-option" data-value="Inner">
+                    <div class="join-name">Inner Join</div>
+                  </div>
+                  <div class="join-option" data-value="Left">
+                    <div class="join-name">Left Join</div>
+                  </div>
+                  <div class="join-option" data-value="Right">
+                    <div class="join-name">Right Join</div>
+                  </div>
+                  <div class="join-option" data-value="Outer">
+                    <div class="join-name">Outer Join</div>
+                  </div>
+                  <div class="join-option" data-value="Full">
+                    <div class="join-name">Full Join</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="leftJoinColumn">Left Join Column:</label>
+              <input type="text" id="leftJoinColumn" placeholder="Column from left dataset">
+            </div>
+            <div class="form-group">
+              <label for="rightJoinColumn">Right Join Column:</label>
+              <input type="text" id="rightJoinColumn" placeholder="Column from right dataset">
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Vertical divider -->
+      <div id="verticalDivider" class="divider vertical"></div>
+
+      <!-- Right Terminal Panel: Results -->
+      <div id="rightTerminal">
+        <div class="header">
+          <h3 id="tableHeader">Results:</h3>
+          <div class="header-buttons">
+            <button id="exportBtn" title="Export to CSV">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#007acc" viewBox="0 0 24 24">
+                <path d="M5 20h14v-2H5v2z"/>
+                <path d="M12 16l-4-4h3V4h2v8h3l-4 4z"/>
+              </svg>
+            </button>
+            <button id="maximizeBtn" title="Maximize">
+              <svg id="maxIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#007acc" viewBox="0 0 24 24">
+                <path d="M3 3h18v18H3V3zm2 2v14h14V5H5z"/>
+              </svg>
+            </button>
+            <button id="saveConfigBtn" title="Save Config">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#007acc" viewBox="0 0 24 24">
+                <path d="M17 3H7a2 2 0 0 0-2 2v14l7-3 7 3V5a2 2 0 0 0-2-2z"/>
+              </svg>
+            </button>
+            <button id="loadConfigBtn" title="Load Config">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#007acc" viewBox="0 0 24 24">
+                <path d="M10 4H2v16h20V6H12l-2-2z"/>
+              </svg>
+            </button>
+            <input type="file" id="loadConfigInput" style="display: none;" accept=".json">
+          </div>
+        </div>
+        <div id="tableContainer">Results will appear here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <!-- Note: utils.js contains functions like makeDraggable, connectBoxes, startResizeHorizontal/Vertical, exportCSV, renderChart, toggleMaximize -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/mode/sql/sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/addon/hint/show-hint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/addon/hint/sql-hint.min.js"></script>
+  <script src="utils.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
