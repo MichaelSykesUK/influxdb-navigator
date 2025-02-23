@@ -76,7 +76,7 @@ h1, h2, h3, h4, h5, h6 {
   background: #f9f9f9;
   display: flex;
   flex-direction: column;
-  min-width: 500px;
+  min-width: 550px;
 }
 
 #leftTerminal .header {
@@ -110,7 +110,7 @@ h1, h2, h3, h4, h5, h6 {
   transition: color 0.3s ease, background-color 0.3s ease;
 }
 #runButton:hover svg {
-  fill: #008000 !important;
+  fill: #007380 !important;
 }
 
 /* Right Terminal */
@@ -157,10 +157,10 @@ h1, h2, h3, h4, h5, h6 {
   transition: color 0.3s ease, transform 0.3s ease;
 }
 .header-buttons button:hover {
-  color: #008000;
+  color: #007380;
 }
 .header-buttons button:hover svg {
-  fill: #008000 !important;
+  fill: #007380 !important;
 }
 
 /* Table container */
@@ -249,6 +249,13 @@ select::placeholder {
 .select-dropdown button,
 .where-dropdown button {
   width: 200px !important;
+}
+
+.operator-dropdown,
+.operator-dropdown button {
+  width: 30px !important;
+  text-align: center !important;
+  align-items: center !important;
 }
 
 .table-dropdown-menu,
@@ -402,13 +409,13 @@ select::placeholder {
   z-index: 2;
 }
 .box:hover {
-  border-color: #deb100;
+  border-color: #fad900;
 }
 .box.selected {
   border-color: #007acc;
 }
 .box.selected:hover {
-  border-color: #deb100;
+  border-color: #fad900;
 }
 .box .box-title {
   text-align: center;
@@ -477,7 +484,7 @@ select::placeholder {
 .minus-btn:hover,
 .inline-plus-btn:hover,
 .inline-plus-btn2:hover {
-  background-color: #00985b;
+  background-color: #007380;
 }
 
 .query-btn {
@@ -534,7 +541,7 @@ select::placeholder {
   transition: background-color 0.2s ease;
 }
 .removeWhereBtn:hover {
-  background-color: #00985b;
+  background-color: #007380;
 }
 
 /*----------------------------------------------------------------------------
@@ -554,7 +561,7 @@ select::placeholder {
   margin-bottom: 10px;
 }
 .advanced-btn:hover {
-  background: #00985b;
+  background: #007380;
 }
 
 /*----------------------------------------------------------------------------
@@ -589,4 +596,11 @@ table td {
   0% { transform: scale(1); }
   50% { transform: scale(1.1); }
   100% { transform: scale(1); }
+}
+
+
+/* Ensure the SQL advanced editor wraps lines and preserves newlines */
+#sqlEditorText {
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }

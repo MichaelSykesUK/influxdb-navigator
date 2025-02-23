@@ -58,7 +58,8 @@ function updateTransformDropdowns(parentId) {
           current.push(col);
         }
         btn.dataset.selected = current.join(",");
-        btn.querySelector("span").textContent = current.length ? current.join(", ") : "*";
+        // Clear text if no selections; otherwise show joined list.
+        btn.querySelector("span").textContent = current.length ? current.join(", ") : "";
       });
       selectMenu.appendChild(opt);
     });
@@ -79,7 +80,7 @@ function updateTransformDropdowns(parentId) {
           current.push(col);
         }
         btn.dataset.selected = current.join(",");
-        btn.querySelector("span").textContent = current.length ? current.join(", ") : "*";
+        btn.querySelector("span").textContent = current.length ? current.join(", ") : "";
       });
       whereMenu.appendChild(opt);
     });
@@ -90,6 +91,7 @@ function updatePlotDropdowns(plotBoxId) {
   let plotBoxState = boxState[plotBoxId];
   if (!plotBoxState) return;
   
+  // Always use the parent's data for column names.
   let parentState = boxState[plotBoxState.parent];
   if (parentState && parentState.data && parentState.data.length > 0) {
     let cols = Object.keys(parentState.data[0]);
@@ -104,14 +106,8 @@ function updatePlotDropdowns(plotBoxId) {
       opt.dataset.value = col;
       opt.addEventListener("click", function () {
         let btn = document.getElementById("xSelectButton");
-        let current = btn.dataset.selected ? btn.dataset.selected.split(",") : [];
-        if (current.includes(col)) {
-          current = current.filter(v => v !== col);
-        } else {
-          current.push(col);
-        }
-        btn.dataset.selected = current.join(",");
-        btn.querySelector("span").textContent = current.length ? current.join(", ") : "*";
+        btn.dataset.selected = col;
+        btn.querySelector("span").textContent = col;
       });
       xSelectMenu.appendChild(opt);
     });
@@ -129,14 +125,8 @@ function updatePlotDropdowns(plotBoxId) {
           opt.dataset.value = col;
           opt.addEventListener("click", function () {
             let btn = document.getElementById(`ySelectButton_${index}`);
-            let current = btn.dataset.selected ? btn.dataset.selected.split(",") : [];
-            if (current.includes(col)) {
-              current = current.filter(v => v !== col);
-            } else {
-              current.push(col);
-            }
-            btn.dataset.selected = current.join(",");
-            btn.querySelector("span").textContent = current.length ? current.join(", ") : "*";
+            btn.dataset.selected = col;
+            btn.querySelector("span").textContent = col;
           });
           ySelectMenu.appendChild(opt);
         });
@@ -158,10 +148,9 @@ function addWhereRow(operatorLabel, e) {
     <label class="where-operator-label">${operatorLabel}</label>
     <div class="custom-dropdown where-dropdown">
       <button id="whereButton_${index}" class="where-button" aria-haspopup="true" aria-expanded="false">
-        <span id="whereDisplay_${index}">Select columns</span>
+        <span id="whereDisplay_${index}"></span>
       </button>
-      <div id="whereDropdownMenu_${index}" class="where-dropdown-menu" style="display:none;">
-      </div>
+      <div id="whereDropdownMenu_${index}" class="where-dropdown-menu" style="display:none;"></div>
     </div>
     <div class="custom-dropdown operator-dropdown">
       <button id="operatorButton_${index}" class="operator-button" aria-haspopup="true" aria-expanded="false">
@@ -178,8 +167,8 @@ function addWhereRow(operatorLabel, e) {
           <div class="operator-name">&gt;</div>
         </div>
       </div>
-      <input type="text" class="whereValue" id="whereValue_${index}" placeholder='e.g. "BAT1"'>
     </div>
+    <input type="text" class="whereValue" id="whereValue_${index}" placeholder='e.g. BAT1'>
     <button class="removeWhereBtn" title="Remove condition">
       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#ffffff" viewBox="0 0 24 24">
         <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -188,26 +177,29 @@ function addWhereRow(operatorLabel, e) {
   `;
   container.appendChild(groupDiv);
   
+  // Attach click event to the additional WHERE button to toggle its dropdown.
+  const extraWhereButton = groupDiv.querySelector(`#whereButton_${index}`);
+  extraWhereButton.addEventListener("click", function(e) {
+    e.stopPropagation();
+    const dropdown = groupDiv.querySelector(`#whereDropdownMenu_${index}`);
+    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+  });
+  
+  // Attach operator dropdown event.
   const operatorBtn = groupDiv.querySelector(".operator-button");
   operatorBtn.addEventListener("click", function(e) {
     e.stopPropagation();
     const dropdownMenu = groupDiv.querySelector(".operator-dropdown-menu");
     const isExpanded = operatorBtn.getAttribute("aria-expanded") === "true";
-    if (isExpanded) {
-      dropdownMenu.style.display = "none";
-      operatorBtn.setAttribute("aria-expanded", "false");
-    } else {
-      dropdownMenu.style.display = "block";
-      operatorBtn.setAttribute("aria-expanded", "true");
-    }
+    dropdownMenu.style.display = isExpanded ? "none" : "block";
+    operatorBtn.setAttribute("aria-expanded", isExpanded ? "false" : "true");
   });
   
   groupDiv.querySelectorAll(".operator-option").forEach(function(option) {
     option.addEventListener("click", function() {
       const text = option.querySelector(".operator-name").textContent;
       groupDiv.querySelector(`#operatorDisplay_${index}`).textContent = text;
-      const dropdownMenu = groupDiv.querySelector(".operator-dropdown-menu");
-      dropdownMenu.style.display = "none";
+      groupDiv.querySelector(".operator-dropdown-menu").style.display = "none";
       operatorBtn.setAttribute("aria-expanded", "false");
     });
   });
@@ -216,6 +208,28 @@ function addWhereRow(operatorLabel, e) {
     e.preventDefault();
     container.removeChild(groupDiv);
   });
+  
+  // Populate the additional WHERE dropdown using the parent's columns.
+  const parentId = boxState[selectedBox.id].parent;
+  let parentState = parentId ? boxState[parentId] : null;
+  if (parentState && parentState.data && parentState.data.length > 0) {
+    let cols = Object.keys(parentState.data[0]);
+    const whereDropdown = groupDiv.querySelector(`#whereDropdownMenu_${index}`);
+    whereDropdown.innerHTML = "";
+    cols.forEach(col => {
+      let opt = document.createElement("div");
+      opt.className = "where-option";
+      opt.textContent = col;
+      opt.dataset.value = col;
+      opt.addEventListener("click", function () {
+        let btn = groupDiv.querySelector(`#whereButton_${index}`);
+        btn.dataset.selected = col;
+        btn.querySelector("span").textContent = col;
+        whereDropdown.style.display = "none";
+      });
+      whereDropdown.appendChild(opt);
+    });
+  }
 }
 
 // ============================================================
@@ -263,7 +277,12 @@ function createBox(title, type, parentId = null, configState = null) {
       boxState[box.id].start_time = "2024-07-25T16:47:00Z";
       boxState[box.id].end_time = "2024-07-25T16:47:30Z";
       boxState[box.id].header = `Results: Query ${tableQueryCounter - 1}`;
-      boxState[box.id].parent = parentId;
+      // For a table query box, if created from an Influx box then use self as data source.
+      if (parentId && document.getElementById(parentId).dataset.type !== "influx") {
+        boxState[box.id].parent = parentId;
+      } else {
+        boxState[box.id].parent = box.id;
+      }
       buttonsHTML = `<button class="transform-btn" title="Create SQL Transform" style="position:absolute; top:5px; right:5px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#ffffff" viewBox="0 0 24 24">
             <rect x="4" y="6" width="16" height="2"/>
@@ -491,10 +510,10 @@ function createBox(title, type, parentId = null, configState = null) {
   if (box.dataset.type === "plot") {
     document.getElementById("tableContainer").innerHTML = "";
   } else {
-    document.getElementById("tableContainer").innerHTML = (boxState[box.id].result) || "";
+    document.getElementById("tableContainer").innerHTML = boxState[box.id].result || "";
   }
   document.getElementById("tableHeader").textContent =
-    (boxState[box.id].header) || ("Results: " + box.querySelector(".box-title").textContent);
+    boxState[box.id].header || ("Results: " + box.querySelector(".box-title").textContent);
   
   selectBox(box);
   return box;
@@ -686,6 +705,10 @@ function runQuery() {
   } else if (selectedBox.dataset.type === "sql") {
     if (state.sqlMode === "basic" || !state.sqlMode) {
       let selectClause = document.getElementById("selectDisplay").textContent.trim();
+      // Use "*" if no selection has been made.
+      if (!selectClause || selectClause === "Select columns") {
+        selectClause = "*";
+      }
       let whereClause = "";
       let baseColumn = document.getElementById("whereDisplay").textContent.trim();
       let opText = document.getElementById("operatorDisplay").textContent;
@@ -987,7 +1010,7 @@ function loadConfig(event) {
 // Initialization
 // ============================================================
 document.addEventListener("DOMContentLoaded", () => {
-  // Create the InfluxDB box (it should appear on initialization) and run its query.
+  // Create the InfluxDB box on startup.
   createBox("InfluxDB", "influx");
   runQuery();
 
@@ -1001,7 +1024,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById("loadConfigInput").addEventListener("change", loadConfig);
 
-  // Window resize events (these use functions in utils.js).
+  // Window resize events (from utils.js).
   document.getElementById("horizontalDivider").addEventListener("mousedown", startResizeHorizontal);
   document.getElementById("verticalDivider").addEventListener("mousedown", startResizeVertical);
   window.addEventListener("resize", updateConnectors);
@@ -1078,6 +1101,7 @@ document.addEventListener("DOMContentLoaded", () => {
     menu.style.display = menu.style.display === "block" ? "none" : "block";
   });
   
+  // Additional WHERE condition buttons (if any exist).
   let condCount = 5;
   for (let index = 0; index < condCount; index++) {
     const button = document.getElementById(`additionalWhereButton_${index}`);
@@ -1108,7 +1132,7 @@ document.addEventListener("DOMContentLoaded", () => {
       let selectClause = document.getElementById("selectDisplay").textContent;
       let whereClause = "";
       let mainWhere = document.getElementById("whereDisplay").textContent;
-      let selValues = mainWhere ? mainWhere.split(",") : [];
+      let selValues = (mainWhere && mainWhere !== "Select columns") ? mainWhere.split(",") : [];
       if (selValues.length > 0) { whereClause = selValues.join(", "); }
       document.querySelectorAll("#additionalWhereContainer .where-condition").forEach(cond => {
         let col = cond.querySelector(".where-button span").textContent.trim();
@@ -1122,7 +1146,7 @@ document.addEventListener("DOMContentLoaded", () => {
           whereClause += col + " " + opSym + " " + val;
         }
       });
-      let sql = "SELECT " + (selectClause || "*") + " FROM df";
+      let sql = "SELECT " + ((selectClause && selectClause !== "Select columns") ? selectClause : "*") + " FROM df";
       if(whereClause) { sql += " WHERE " + whereClause; }
       state.sql = sql;
       sqlEditorCM.setValue(sql);
@@ -1184,12 +1208,8 @@ document.addEventListener("DOMContentLoaded", () => {
                           </div>`;
     const addBtn = document.getElementById("addYBtn");
     yContainer.insertBefore(groupDiv, addBtn);
-    let currentPlotState = boxState[selectedBox.id];
-    let parentState = boxState[currentPlotState.parent];
-    if (!parentState || !parentState.data || parentState.data.length === 0) {
-      alert("Parent data not available for Y values.");
-      return;
-    }
+    // Refresh the Y dropdown options based on the parent's data.
+    updatePlotDropdowns(selectedBox.id);
     document.getElementById(`ySelectButton_${newIndex}`).addEventListener("click", function(e) {
       e.stopPropagation();
       const menu = document.getElementById(`ySelectDropdownMenu_${newIndex}`);

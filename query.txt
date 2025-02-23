@@ -1,0 +1,18 @@
+{
+    table: "batspk__4_2_0__ethernet__65400",
+    start_time: "2024-07-25T16:47:00Z",
+    end_time: "2024-07-25T16:50:00Z"
+}
+
+{
+    "table": "biscana__4_2_0__bis_can_a__1",
+    "start_time": "2024-07-25T16:47:00Z",
+    "end_time": "2024-07-25T16:47:10Z"
+}
+
+
+batspk__4_2_0__ethernet__65400
+biscana__4_2_0__bis_can_a__1
+
+2024-07-25T16:47:00Z
+2024-07-25T16:50:00Z
