@@ -56,6 +56,7 @@
           <!-- Transform Editor -->
           <div id="sqlEditor" style="display:none;">
             <button id="toggleAdvanced" class="advanced-btn">Advanced</button>
+            <button id="resetBasicBtn" class="advanced-btn">Reset</button>
             <div id="sqlBasicEditor">
               <div class="sql-row">
                 <label for="selectDisplay">SELECT:</label>
@@ -98,10 +99,12 @@
                 <button id="addWhereOr" class="inline-plus-btn2" title="Add WHERE condition with OR">OR</button>
               </div>
               <div id="additionalWhereContainer"></div>
+              <div id="basicSQLPreview" class="basic-sql-preview"></div>
             </div>
             <div id="sqlAdvancedEditor" style="display:none;">
               <label for="sqlEditorText">Enter SQL statement below:</label>
               <textarea id="sqlEditorText" rows="10" spellcheck="false">SELECT * FROM df</textarea>
+              <button id="importBasicBtn" class="import-basic-btn">Import Basic</button>
             </div>
           </div>
 
@@ -165,11 +168,21 @@
             </div>
             <div class="form-group">
               <label for="leftJoinColumn">Left Join Column:</label>
-              <input type="text" id="leftJoinColumn" placeholder="Column from left dataset">
+              <div class="custom-dropdown join-dropdown">
+                <button id="leftJoinColumnButton" aria-haspopup="true" aria-expanded="false">
+                  <span id="leftJoinColumnDisplay">Select a column from left dataset to join on</span>
+                </button>
+                <div class="join-dropdown-menu2" id="leftJoinDropdownMenu"></div>
+              </div>
             </div>
             <div class="form-group">
               <label for="rightJoinColumn">Right Join Column:</label>
-              <input type="text" id="rightJoinColumn" placeholder="Column from right dataset">
+              <div class="custom-dropdown join-dropdown">
+                <button id="rightJoinColumnButton" aria-haspopup="true" aria-expanded="false">
+                  <span id="rightJoinColumnDisplay">Select a column from right dataset to join on</span>
+                </button>
+                <div class="join-dropdown-menu2" id="rightJoinDropdownMenu"></div>
+              </div>
             </div>
           </div>
         </div>

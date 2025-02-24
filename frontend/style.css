@@ -53,11 +53,13 @@ h1, h2, h3, h4, h5, h6 {
   z-index: 1;
 }
 
+/* Increase z-index of horizontal divider so it can be dragged */
 .divider.horizontal {
   height: 5px;
   width: 100%;
   background: #ccc;
   cursor: ns-resize;
+  z-index: 3000;
 }
 
 #terminal {
@@ -219,7 +221,6 @@ input::placeholder,
 select::placeholder {
   font-family: 'Inter', sans-serif !important;
   font-size: 12px !important;
-  
 }
 
 /*----------------------------------------------------------------------------
@@ -280,7 +281,8 @@ select::placeholder {
 .table-dropdown-menu .dropdown-search,
 .select-dropdown-menu .dropdown-search,
 .where-dropdown-menu .dropdown-search,
-.plot-dropdown-menu .dropdown-search {
+.plot-dropdown-menu .dropdown-search,
+.join-dropdown-menu2 .dropdown-search  {
   width: 100% !important;
   padding: 5px;
   border: none;
@@ -312,7 +314,7 @@ select::placeholder {
   color: #007acc;
 }
 
-/* Operator dropdown menu: now set to 100% width of its container and a high z-index */
+/* Operator dropdown menu */
 .operator-dropdown-menu {
   position: absolute;
   top: 100%;
@@ -334,8 +336,9 @@ select::placeholder {
   white-space: nowrap;
 }
 
-/* Join dropdown menu */
-.join-dropdown-menu {
+/* Join dropdown menus */
+.join-dropdown-menu, 
+.join-dropdown-menu2 {
   position: absolute;
   top: 100%;
   left: 0;
@@ -345,8 +348,10 @@ select::placeholder {
   border: 1px solid #ddd;
   border-radius: 4px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  z-index: 2000;
 }
-.join-dropdown-menu .join-option {
+.join-dropdown-menu .join-option,
+.join-dropdown-menu2 .join-option {
   padding: 5px 10px;
   cursor: pointer;
   font-size: 12px;
@@ -476,7 +481,6 @@ select::placeholder {
   align-items: center;
   transition: background-color 0.2s ease;
 }
-/* Ensure plus/minus buttons (including inline ones) turn green on hover */
 .plot-btn:hover,
 .transform-btn:hover,
 .join-btn:hover,
@@ -530,13 +534,13 @@ select::placeholder {
   color: #fff;
   border: none;
   border-radius: 25%;
-  width: 20px; /* Increased size for better appearance */
+  width: 20px;
   height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 12px; /* Adjust size if needed */
+  font-size: 12px;
   padding: 0;
   transition: background-color 0.2s ease;
 }
@@ -545,9 +549,10 @@ select::placeholder {
 }
 
 /*----------------------------------------------------------------------------
-   Advanced/Basic Toggle Button
+   Advanced/Basic Toggle Button & Advanced Button Styling
 ----------------------------------------------------------------------------*/
-.advanced-btn {
+.advanced-btn,
+.import-basic-btn {
   background: #007acc;
   color: #fff;
   border: none;
@@ -560,47 +565,85 @@ select::placeholder {
   transition: background-color 0.2s ease;
   margin-bottom: 10px;
 }
-.advanced-btn:hover {
+#importBasicBtn {
+  margin-top: 5px;
+}
+.advanced-btn:hover,
+.import-basic-btn:hover {
   background: #007380;
 }
 
 /*----------------------------------------------------------------------------
-   Table Display
+   CodeMirror SQL Editor
 ----------------------------------------------------------------------------*/
-table th,
-table td {
+.CodeMirror {
   border: 1px solid #ddd;
-  padding: 4px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
+  font-size: 12px;
+  height: auto;
 }
 
 /*----------------------------------------------------------------------------
-   Animations
+   Additional Custom Rules
 ----------------------------------------------------------------------------*/
-.spinner {
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid #007acc;
-  border-radius: 50%;
-  width: 16px;
-  height: 16px;
-  animation: spin 1s linear infinite;
-  margin: auto;
-}
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-@keyframes pulsate {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
+#additionalWhereContainer {
+  max-height: 150px;
+  overflow-y: auto;
 }
 
+.where-dropdown-menu {
+  z-index: 2000;
+}
 
-/* Ensure the SQL advanced editor wraps lines and preserves newlines */
-#sqlEditorText {
-  white-space: pre-wrap;
-  word-wrap: break-word;
+.custom-dropdown-btn {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 5px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.basic-sql-preview {
+  margin-top: 5px;
+  font-family: monospace;
+  font-size: 12px;
+  background-color: #ffffff;
+  padding: 5px;
+  border: 1px solid #ddd;
+  z-index: 100;
+}
+
+/*----------------------------------------------------------------------------
+   Import Basic Button Styling
+----------------------------------------------------------------------------*/
+#importBasicBtn {
+  background: #007bff;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-block;
+}
+#importBasicBtn:hover {
+  background: #0056b3;
+}
+
+/*----------------------------------------------------------------------------
+   Ensure dropdowns appear above other elements
+----------------------------------------------------------------------------*/
+.join-dropdown-menu, .join-dropdown-menu2, .plot-dropdown-menu, .where-dropdown-menu {
+  z-index: 2000 !important;
+}
+
+/*----------------------------------------------------------------------------
+   Logo Styling
+----------------------------------------------------------------------------*/
+#logo {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  font-family: 'Lucida Console', Monaco, monospace;
+  font-size: 36px;
+  color: #007acc;
+  z-index: 4000;
 }

@@ -19,6 +19,21 @@ let joinLinkingSource = null;
 let plotYState = {};
 let transWhereState = {};
 
+// -------------------------------------------------------------------
+// Set Run Button Loading Spinner
+// -------------------------------------------------------------------
+function setRunButtonLoading(isLoading) {
+  const runButton = document.getElementById("runButton");
+  runButton.disabled = isLoading;
+  if (isLoading) {
+    runButton.innerHTML = '<div class="spinner"></div>';
+  } else {
+    runButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#007acc" viewBox="0 0 24 24">
+      <path d="M8 5v14l11-7z"/>
+    </svg>`;
+  }
+}
+
 // ============================================================
 // Utility Functions for Dropdowns and WHERE Rows
 // ============================================================
@@ -44,6 +59,34 @@ function updateTransformDropdowns(parentId) {
     // Populate SELECT dropdown.
     let selectMenu = document.getElementById("selectDropdownMenu");
     selectMenu.innerHTML = "";
+    if (!selectMenu.querySelector(".dropdown-search")) {
+      let searchInput = document.createElement("input");
+      searchInput.type = "text";
+      searchInput.className = "dropdown-search";
+      searchInput.placeholder = "Search...";
+      searchInput.addEventListener("click", e => e.stopPropagation());
+      searchInput.addEventListener("keyup", function() {
+        let filter = searchInput.value.toLowerCase();
+        selectMenu.querySelectorAll(".select-option").forEach(opt => {
+          opt.style.display = opt.textContent.toLowerCase().indexOf(filter) > -1 ? "" : "none";
+        });
+      });
+      selectMenu.insertBefore(searchInput, selectMenu.firstChild);
+    }
+    // Add a "Clear" option
+    let clearSelectOpt = document.createElement("div");
+    clearSelectOpt.className = "select-option";
+    clearSelectOpt.textContent = "Clear";
+    clearSelectOpt.dataset.value = "";
+    clearSelectOpt.addEventListener("click", function() {
+      let btn = document.getElementById("selectButton");
+      btn.dataset.selected = "";
+      btn.querySelector("span").textContent = "Select columns";
+      selectMenu.style.display = "none";
+      updateSQLFromBasic();
+    });
+    selectMenu.appendChild(clearSelectOpt);
+    // Populate SELECT dropdown with columns
     cols.forEach(col => {
       let opt = document.createElement("div");
       opt.className = "select-option";
@@ -58,14 +101,43 @@ function updateTransformDropdowns(parentId) {
           current.push(col);
         }
         btn.dataset.selected = current.join(",");
-        // Clear text if no selections; otherwise show joined list.
-        btn.querySelector("span").textContent = current.length ? current.join(", ") : "";
+        btn.querySelector("span").textContent = current.length ? current.join(", ") : "Select columns";
+        updateSQLFromBasic();
       });
       selectMenu.appendChild(opt);
     });
+    
     // Populate WHERE dropdown.
     let whereMenu = document.getElementById("whereDropdownMenu");
     whereMenu.innerHTML = "";
+    if (!whereMenu.querySelector(".dropdown-search")) {
+      let searchInput = document.createElement("input");
+      searchInput.type = "text";
+      searchInput.className = "dropdown-search";
+      searchInput.placeholder = "Search...";
+      searchInput.addEventListener("click", e => e.stopPropagation());
+      searchInput.addEventListener("keyup", function() {
+        let filter = searchInput.value.toLowerCase();
+        whereMenu.querySelectorAll(".where-option").forEach(opt => {
+          opt.style.display = opt.textContent.toLowerCase().indexOf(filter) > -1 ? "" : "none";
+        });
+      });
+      whereMenu.insertBefore(searchInput, whereMenu.firstChild);
+    }
+    // Add a "Clear" option
+    let clearWhereOpt = document.createElement("div");
+    clearWhereOpt.className = "where-option";
+    clearWhereOpt.textContent = "Clear";
+    clearWhereOpt.dataset.value = "";
+    clearWhereOpt.addEventListener("click", function() {
+      let btn = document.getElementById("whereButton");
+      btn.dataset.selected = "";
+      btn.querySelector("span").textContent = "Select columns";
+      whereMenu.style.display = "none";
+      updateSQLFromBasic();
+    });
+    whereMenu.appendChild(clearWhereOpt);
+    // Populate WHERE dropdown with columns
     cols.forEach(col => {
       let opt = document.createElement("div");
       opt.className = "where-option";
@@ -73,14 +145,10 @@ function updateTransformDropdowns(parentId) {
       opt.dataset.value = col;
       opt.addEventListener("click", function () {
         let btn = document.getElementById("whereButton");
-        let current = btn.dataset.selected ? btn.dataset.selected.split(",") : [];
-        if (current.includes(col)) {
-          current = current.filter(v => v !== col);
-        } else {
-          current.push(col);
-        }
-        btn.dataset.selected = current.join(",");
-        btn.querySelector("span").textContent = current.length ? current.join(", ") : "";
+        btn.dataset.selected = col;
+        btn.querySelector("span").textContent = col;
+        whereMenu.style.display = "none";
+        updateSQLFromBasic();
       });
       whereMenu.appendChild(opt);
     });
@@ -91,14 +159,26 @@ function updatePlotDropdowns(plotBoxId) {
   let plotBoxState = boxState[plotBoxId];
   if (!plotBoxState) return;
   
-  // Always use the parent's data for column names.
   let parentState = boxState[plotBoxState.parent];
   if (parentState && parentState.data && parentState.data.length > 0) {
     let cols = Object.keys(parentState.data[0]);
     
-    // Populate X dropdown menu.
     let xSelectMenu = document.getElementById("xSelectDropdownMenu");
     xSelectMenu.innerHTML = "";
+    if (!xSelectMenu.querySelector(".dropdown-search")) {
+      let searchInput = document.createElement("input");
+      searchInput.type = "text";
+      searchInput.className = "dropdown-search";
+      searchInput.placeholder = "Search...";
+      searchInput.addEventListener("click", e => e.stopPropagation());
+      searchInput.addEventListener("keyup", function() {
+        let filter = searchInput.value.toLowerCase();
+        xSelectMenu.querySelectorAll(".plot-option").forEach(opt => {
+          opt.style.display = opt.textContent.toLowerCase().indexOf(filter) > -1 ? "" : "none";
+        });
+      });
+      xSelectMenu.insertBefore(searchInput, xSelectMenu.firstChild);
+    }
     cols.forEach(col => {
       let opt = document.createElement("div");
       opt.className = "plot-option";
@@ -112,12 +192,25 @@ function updatePlotDropdowns(plotBoxId) {
       xSelectMenu.appendChild(opt);
     });
     
-    // Populate Y dropdown menus.
     let yCount = plotYState[plotBoxId] || 1;
     for (let index = 1; index <= yCount; index++) {
       let ySelectMenu = document.getElementById(`ySelectDropdownMenu_${index}`);
       if (ySelectMenu) {
         ySelectMenu.innerHTML = "";
+        if (!ySelectMenu.querySelector(".dropdown-search")) {
+          let searchInput = document.createElement("input");
+          searchInput.type = "text";
+          searchInput.className = "dropdown-search";
+          searchInput.placeholder = "Search...";
+          searchInput.addEventListener("click", e => e.stopPropagation());
+          searchInput.addEventListener("keyup", function() {
+            let filter = searchInput.value.toLowerCase();
+            ySelectMenu.querySelectorAll(".plot-option").forEach(opt => {
+              opt.style.display = opt.textContent.toLowerCase().indexOf(filter) > -1 ? "" : "none";
+            });
+          });
+          ySelectMenu.insertBefore(searchInput, ySelectMenu.firstChild);
+        }
         cols.forEach(col => {
           let opt = document.createElement("div");
           opt.className = "plot-option";
@@ -135,101 +228,114 @@ function updatePlotDropdowns(plotBoxId) {
   }
 }
 
-function addWhereRow(operatorLabel, e) {
-  if (e) e.preventDefault();
-  const currentCount = transWhereState[selectedBox.id] || 0;
-  const newCount = currentCount + 1;
-  transWhereState[selectedBox.id] = newCount;
-  const index = newCount;
-  const container = document.getElementById("additionalWhereContainer");
-  const groupDiv = document.createElement("div");
-  groupDiv.className = "sql-row where-condition";
-  groupDiv.innerHTML = `
-    <label class="where-operator-label">${operatorLabel}</label>
-    <div class="custom-dropdown where-dropdown">
-      <button id="whereButton_${index}" class="where-button" aria-haspopup="true" aria-expanded="false">
-        <span id="whereDisplay_${index}"></span>
-      </button>
-      <div id="whereDropdownMenu_${index}" class="where-dropdown-menu" style="display:none;"></div>
-    </div>
-    <div class="custom-dropdown operator-dropdown">
-      <button id="operatorButton_${index}" class="operator-button" aria-haspopup="true" aria-expanded="false">
-        <span id="operatorDisplay_${index}">=</span>
-      </button>
-      <div class="operator-dropdown-menu" style="display:none;">
-        <div class="operator-option" data-value="=">
-          <div class="operator-name">=</div>
-        </div>
-        <div class="operator-option" data-value="<">
-          <div class="operator-name">&lt;</div>
-        </div>
-        <div class="operator-option" data-value=">">
-          <div class="operator-name">&gt;</div>
-        </div>
-      </div>
-    </div>
-    <input type="text" class="whereValue" id="whereValue_${index}" placeholder='e.g. BAT1'>
-    <button class="removeWhereBtn" title="Remove condition">
-      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#ffffff" viewBox="0 0 24 24">
-        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-      </svg>
-    </button>
-  `;
-  container.appendChild(groupDiv);
-  
-  // Attach click event to the additional WHERE button to toggle its dropdown.
-  const extraWhereButton = groupDiv.querySelector(`#whereButton_${index}`);
-  extraWhereButton.addEventListener("click", function(e) {
-    e.stopPropagation();
-    const dropdown = groupDiv.querySelector(`#whereDropdownMenu_${index}`);
-    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
-  });
-  
-  // Attach operator dropdown event.
-  const operatorBtn = groupDiv.querySelector(".operator-button");
-  operatorBtn.addEventListener("click", function(e) {
-    e.stopPropagation();
-    const dropdownMenu = groupDiv.querySelector(".operator-dropdown-menu");
-    const isExpanded = operatorBtn.getAttribute("aria-expanded") === "true";
-    dropdownMenu.style.display = isExpanded ? "none" : "block";
-    operatorBtn.setAttribute("aria-expanded", isExpanded ? "false" : "true");
-  });
-  
-  groupDiv.querySelectorAll(".operator-option").forEach(function(option) {
-    option.addEventListener("click", function() {
-      const text = option.querySelector(".operator-name").textContent;
-      groupDiv.querySelector(`#operatorDisplay_${index}`).textContent = text;
-      groupDiv.querySelector(".operator-dropdown-menu").style.display = "none";
-      operatorBtn.setAttribute("aria-expanded", "false");
-    });
-  });
-  
-  groupDiv.querySelector(".removeWhereBtn").addEventListener("click", function(e) {
-    e.preventDefault();
-    container.removeChild(groupDiv);
-  });
-  
-  // Populate the additional WHERE dropdown using the parent's columns.
-  const parentId = boxState[selectedBox.id].parent;
-  let parentState = parentId ? boxState[parentId] : null;
-  if (parentState && parentState.data && parentState.data.length > 0) {
-    let cols = Object.keys(parentState.data[0]);
-    const whereDropdown = groupDiv.querySelector(`#whereDropdownMenu_${index}`);
-    whereDropdown.innerHTML = "";
+function updateJoinDropdowns(joinBoxId) {
+  let joinState = boxState[joinBoxId];
+  if (!joinState) return;
+  let parentStateLeft = boxState[joinState.leftParent];
+  let parentStateRight = boxState[joinState.rightParent];
+  if (parentStateLeft && parentStateLeft.data && parentStateLeft.data.length > 0) {
+    let cols = Object.keys(parentStateLeft.data[0]);
+    let leftJoinMenu = document.getElementById("leftJoinDropdownMenu");
+    leftJoinMenu.innerHTML = "";
     cols.forEach(col => {
       let opt = document.createElement("div");
-      opt.className = "where-option";
+      opt.className = "join-option";
       opt.textContent = col;
       opt.dataset.value = col;
-      opt.addEventListener("click", function () {
-        let btn = groupDiv.querySelector(`#whereButton_${index}`);
+      opt.addEventListener("click", function() {
+        let btn = document.getElementById("leftJoinColumnButton");
         btn.dataset.selected = col;
         btn.querySelector("span").textContent = col;
-        whereDropdown.style.display = "none";
+        leftJoinMenu.style.display = "none";
       });
-      whereDropdown.appendChild(opt);
+      leftJoinMenu.appendChild(opt);
     });
   }
+  if (parentStateRight && parentStateRight.data && parentStateRight.data.length > 0) {
+    let cols = Object.keys(parentStateRight.data[0]);
+    let rightJoinMenu = document.getElementById("rightJoinDropdownMenu");
+    rightJoinMenu.innerHTML = "";
+    cols.forEach(col => {
+      let opt = document.createElement("div");
+      opt.className = "join-option";
+      opt.textContent = col;
+      opt.dataset.value = col;
+      opt.addEventListener("click", function() {
+        let btn = document.getElementById("rightJoinColumnButton");
+        btn.dataset.selected = col;
+        btn.querySelector("span").textContent = col;
+        rightJoinMenu.style.display = "none";
+      });
+      rightJoinMenu.appendChild(opt);
+    });
+  }
+}
+
+function updateSQLFromBasic() { 
+  if (!selectedBox || selectedBox.dataset.type !== "sql") { 
+    return;
+  }
+  const state = boxState[selectedBox.id];
+  let selectClause = document.getElementById("selectDisplay").textContent.trim();
+  if (!selectClause || selectClause === "Select columns") {
+    selectClause = "*";
+  } else {
+    selectClause = selectClause.split(",").map(col => `"${col.trim()}"`).join(", ");
+  }
+  let whereClause = "";
+  let baseColumn = document.getElementById("whereDisplay").textContent.trim();
+  let opText = document.getElementById("operatorDisplay").textContent.trim();
+  const opMap = { "Equal": "=", "Less Than": "<", "Greater Than": ">" };
+  let baseOperator = opMap[opText] || "=";
+  let baseValue = document.getElementById("whereValue").value.trim();
+  if (baseColumn && baseColumn !== "Select columns" && baseValue) {
+    whereClause = `"${baseColumn}" ${baseOperator} "${baseValue}"`;
+  }
+  document.querySelectorAll("#additionalWhereContainer .where-condition").forEach(cond => {
+    let col = cond.querySelector(".where-button span").textContent.trim();
+    let opTxt = cond.querySelector(".operator-button span").textContent.trim();
+    let opSym = opMap[opTxt] || "=";
+    let val = cond.querySelector(".whereValue").value.trim();
+    let operatorLabelElem = cond.querySelector(".where-operator-label");
+    let opLabel = (operatorLabelElem && operatorLabelElem.textContent.trim()) || "AND";
+    if (col && col !== "Select columns" && val) {
+      if (whereClause !== "") { whereClause += " " + opLabel + " "; }
+      whereClause += `"${col}" ${opSym} "${val}"`;
+    }
+  });
+  let formattedSQL = "";
+  if (whereClause) {
+    formattedSQL = "SELECT " + selectClause + "\nFROM df\nWHERE " + whereClause.replace(/ (AND|OR) /g, "\n$1 ");
+  } else {
+    formattedSQL = "SELECT " + selectClause + " FROM df";
+  }
+  state.basicSQL = formattedSQL;
+  const previewEl = document.getElementById("basicSQLPreview");
+  let labelEl = document.getElementById("generatedSQLLabel");
+  if (!labelEl) {
+    labelEl = document.createElement("label");
+    labelEl.id = "generatedSQLLabel";
+    labelEl.textContent = "Generated SQL Statement:";
+    previewEl.parentNode.insertBefore(labelEl, previewEl);
+  }
+  previewEl.innerHTML = "<pre>" + formattedSQL + "</pre>";
+}
+
+function resetBasicSQL() {
+  if (!selectedBox || selectedBox.dataset.type !== "sql") return;
+  document.getElementById("selectDisplay").textContent = "Select columns";
+  document.getElementById("selectButton").dataset.selected = "";
+  document.getElementById("whereDisplay").textContent = "Select columns";
+  document.getElementById("whereButton").dataset.selected = "";
+  document.getElementById("operatorDisplay").textContent = "=";
+  document.getElementById("whereValue").value = "";
+  document.getElementById("additionalWhereContainer").innerHTML = "";
+  updateSQLFromBasic();
+}
+
+function resetAdvancedSQL() {
+  if (!selectedBox || selectedBox.dataset.type !== "sql") return;
+  sqlEditorCM.setValue("SELECT * FROM df");
 }
 
 // ============================================================
@@ -277,7 +383,6 @@ function createBox(title, type, parentId = null, configState = null) {
       boxState[box.id].start_time = "2024-07-25T16:47:00Z";
       boxState[box.id].end_time = "2024-07-25T16:47:30Z";
       boxState[box.id].header = `Results: Query ${tableQueryCounter - 1}`;
-      // For a table query box, if created from an Influx box then use self as data source.
       if (parentId && document.getElementById(parentId).dataset.type !== "influx") {
         boxState[box.id].parent = parentId;
       } else {
@@ -306,7 +411,8 @@ function createBox(title, type, parentId = null, configState = null) {
     case "sql":
       boxTitle = "Transform " + sqlTransformCounter;
       sqlTransformCounter++;
-      boxState[box.id].sql = "SELECT * FROM df";
+      boxState[box.id].basicSQL = "";
+      boxState[box.id].advancedSQL = "SELECT * FROM df";
       boxState[box.id].header = `Results: Transform ${sqlTransformCounter - 1}`;
       boxState[box.id].parent = parentId;
       boxState[box.id].sqlMode = "basic";
@@ -366,7 +472,7 @@ function createBox(title, type, parentId = null, configState = null) {
   
   box.innerHTML = `<div class="box-title">${boxTitle}</div>${buttonsHTML}`;
   
-  // Position the box.
+  // Positioning logic
   if (configState && configState.left && configState.top) {
     box.style.left = configState.left;
     box.style.top = configState.top;
@@ -574,6 +680,9 @@ function deleteBox(box) {
   }
 }
 
+// ============================================================
+// Box Selection and Editor Display
+// ============================================================
 function selectBox(box) {
   boxes.forEach(b => b.classList.remove("selected"));
   box.classList.add("selected");
@@ -610,12 +719,13 @@ function selectBox(box) {
         document.getElementById("sqlBasicEditor").style.display = "block";
         document.getElementById("sqlAdvancedEditor").style.display = "none";
         document.getElementById("toggleAdvanced").textContent = "Advanced";
+        updateSQLFromBasic();
       } else {
         document.getElementById("sqlBasicEditor").style.display = "none";
         document.getElementById("sqlAdvancedEditor").style.display = "block";
         document.getElementById("toggleAdvanced").textContent = "Basic";
+        sqlEditorCM.setValue(state.advancedSQL || "SELECT * FROM df");
       }
-      if (state.sqlMode === "advanced" && state.sql) { sqlEditorCM.setValue(state.sql); }
       break;
     case "plot":
       panels.plotForm.style.display = "block";
@@ -627,8 +737,7 @@ function selectBox(box) {
       break;
     case "join":
       panels.joinForm.style.display = "block";
-      document.getElementById("leftJoinColumn").value = state.leftJoinColumn || "";
-      document.getElementById("rightJoinColumn").value = state.rightJoinColumn || "";
+      updateJoinDropdowns(selectedBox.id);
       document.getElementById("joinTypeDisplay").textContent = state.joinType || "Inner";
       break;
     default:
@@ -642,9 +751,125 @@ function selectBox(box) {
     state.header || ("Results: " + box.querySelector(".box-title").textContent);
 }
 
-// ============================================================
-// Query Handling Functions
-// ============================================================
+// -------------------------------------------------------------------
+// Additional WHERE Row – with higher z-index for dropdowns
+// -------------------------------------------------------------------
+function addWhereRow(operatorLabel, e) {
+  if (e) e.preventDefault();
+  const currentCount = transWhereState[selectedBox.id] || 0;
+  const newCount = currentCount + 1;
+  transWhereState[selectedBox.id] = newCount;
+  const index = newCount;
+  const container = document.getElementById("additionalWhereContainer");
+  const groupDiv = document.createElement("div");
+  groupDiv.className = "sql-row where-condition";
+  groupDiv.innerHTML = `
+    <label class="where-operator-label">${operatorLabel}</label>
+    <div class="custom-dropdown where-dropdown">
+      <button id="whereButton_${index}" class="where-button" aria-haspopup="true" aria-expanded="false">
+        <span id="whereDisplay_${index}">Select columns</span>
+      </button>
+      <div id="whereDropdownMenu_${index}" class="where-dropdown-menu" style="display:none; z-index:3000;"></div>
+    </div>
+    <div class="custom-dropdown operator-dropdown">
+      <button id="operatorButton_${index}" class="operator-button" aria-haspopup="true" aria-expanded="false">
+        <span id="operatorDisplay_${index}">=</span>
+      </button>
+      <div class="operator-dropdown-menu" style="display:none;">
+        <div class="operator-option" data-value="=">
+          <div class="operator-name">=</div>
+        </div>
+        <div class="operator-option" data-value="<">
+          <div class="operator-name">&lt;</div>
+        </div>
+        <div class="operator-option" data-value=">">
+          <div class="operator-name">&gt;</div>
+        </div>
+      </div>
+    </div>
+    <input type="text" class="whereValue" id="whereValue_${index}" placeholder='e.g. BAT1'>
+    <button class="removeWhereBtn" title="Remove condition">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#ffffff" viewBox="0 0 24 24">
+        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+      </svg>
+    </button>
+  `;
+  groupDiv.querySelectorAll(".whereValue, .where-button, .operator-button, .where-operator-label").forEach(el => {
+    el.addEventListener("change", updateSQLFromBasic);
+    el.addEventListener("input", updateSQLFromBasic);
+    el.addEventListener("click", updateSQLFromBasic);
+  });
+  
+  container.appendChild(groupDiv);
+  
+  const extraWhereButton = groupDiv.querySelector(`#whereButton_${index}`);
+  extraWhereButton.addEventListener("click", function(e) {
+    e.stopPropagation();
+    const dropdown = groupDiv.querySelector(`#whereDropdownMenu_${index}`);
+    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+  });
+  
+  const operatorBtn = groupDiv.querySelector(".operator-button");
+  operatorBtn.addEventListener("click", function(e) {
+    e.stopPropagation();
+    const dropdownMenu = groupDiv.querySelector(".operator-dropdown-menu");
+    const isExpanded = operatorBtn.getAttribute("aria-expanded") === "true";
+    dropdownMenu.style.display = isExpanded ? "none" : "block";
+    operatorBtn.setAttribute("aria-expanded", isExpanded ? "false" : "true");
+  });
+  
+  groupDiv.querySelectorAll(".operator-option").forEach(function(option) {
+    option.addEventListener("click", function() {
+      const text = option.querySelector(".operator-name").textContent;
+      groupDiv.querySelector(`#operatorDisplay_${index}`).textContent = text;
+      groupDiv.querySelector(".operator-dropdown-menu").style.display = "none";
+      operatorBtn.setAttribute("aria-expanded", "false");
+      updateSQLFromBasic();
+    });
+  });
+  
+  groupDiv.querySelector(".removeWhereBtn").addEventListener("click", function(e) {
+    e.preventDefault();
+    container.removeChild(groupDiv);
+    updateSQLFromBasic();
+  });
+  
+  const parentId = boxState[selectedBox.id].parent;
+  let parentState = parentId ? boxState[parentId] : null;
+  if (parentState && parentState.data && parentState.data.length > 0) {
+    let cols = Object.keys(parentState.data[0]);
+    const whereDropdown = groupDiv.querySelector(`#whereDropdownMenu_${index}`);
+    whereDropdown.innerHTML = "";
+    let clearOpt = document.createElement("div");
+    clearOpt.className = "where-option";
+    clearOpt.textContent = "Clear";
+    clearOpt.dataset.value = "";
+    clearOpt.addEventListener("click", function() {
+      let btn = groupDiv.querySelector(`#whereButton_${index}`);
+      btn.dataset.selected = "";
+      btn.querySelector("span").textContent = "Select columns";
+      whereDropdown.style.display = "none";
+      updateSQLFromBasic();
+    });
+    whereDropdown.appendChild(clearOpt);
+    
+    cols.forEach(col => {
+      let opt = document.createElement("div");
+      opt.className = "where-option";
+      opt.textContent = col;
+      opt.dataset.value = col;
+      opt.addEventListener("click", function () {
+        let btn = groupDiv.querySelector(`#whereButton_${index}`);
+        btn.dataset.selected = col;
+        btn.querySelector("span").textContent = col;
+        whereDropdown.style.display = "none";
+        updateSQLFromBasic();
+      });
+      whereDropdown.appendChild(opt);
+    });
+  }
+}
+
 function runQuery() {
   if (!selectedBox) { alert("Select a box first."); return; }
   setRunButtonLoading(true);
@@ -705,68 +930,94 @@ function runQuery() {
   } else if (selectedBox.dataset.type === "sql") {
     if (state.sqlMode === "basic" || !state.sqlMode) {
       let selectClause = document.getElementById("selectDisplay").textContent.trim();
-      // Use "*" if no selection has been made.
       if (!selectClause || selectClause === "Select columns") {
         selectClause = "*";
+      } else {
+        selectClause = selectClause.split(",").map(col => `"${col.trim()}"`).join(", ");
       }
       let whereClause = "";
       let baseColumn = document.getElementById("whereDisplay").textContent.trim();
-      let opText = document.getElementById("operatorDisplay").textContent;
+      let opText = document.getElementById("operatorDisplay").textContent.trim();
       const opMap = { "Equal": "=", "Less Than": "<", "Greater Than": ">" };
       let baseOperator = opMap[opText] || "=";
       let baseValue = document.getElementById("whereValue").value.trim();
       if (baseColumn && baseColumn !== "Select columns" && baseValue) {
-        whereClause = baseColumn + " " + baseOperator + " " + baseValue;
+        whereClause = `"${baseColumn}" ${baseOperator} "${baseValue}"`;
       }
       document.querySelectorAll("#additionalWhereContainer .where-condition").forEach(cond => {
         let col = cond.querySelector(".where-button span").textContent.trim();
-        let opTxt = cond.querySelector(".operator-button").textContent.trim();
+        let opTxt = cond.querySelector(".operator-button span").textContent.trim();
         let opSym = opMap[opTxt] || "=";
         let val = cond.querySelector(".whereValue").value.trim();
         let operatorLabelElem = cond.querySelector(".where-operator-label");
         let opLabel = (operatorLabelElem && operatorLabelElem.textContent.trim()) || "AND";
         if (col && col !== "Select columns" && val) {
           if (whereClause !== "") { whereClause += " " + opLabel + " "; }
-          whereClause += col + " " + opSym + " " + val;
+          whereClause += `"${col}" ${opSym} "${val}"`;
         }
       });
-      let sql;
-      if (selectClause && selectClause !== "Select columns") {
-        sql = "SELECT " + selectClause + " FROM df";
+      let sql = "";
+      if (whereClause) {
+        sql = "SELECT " + selectClause + "\nFROM df\nWHERE " + whereClause.replace(/ (AND|OR) /g, "\n$1 ");
       } else {
-        sql = "SELECT * FROM df";
+        sql = "SELECT " + selectClause + " FROM df";
       }
-      if (whereClause) { sql += " WHERE " + whereClause; }
-      state.sql = sql;
-    } else {
-      state.sql = sqlEditorCM.getValue();
-    }
-    let parentState = boxState[state.parent];
-    if (!parentState || !parentState.data) {
-      setTimeout(() => { runQueryForBox(selectedBox); }, 1500);
-      return;
-    }
-    let payload = { sql: state.sql, data: parentState.data };
-    fetch("http://127.0.0.1:8000/sql_transform", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
-      .then(response => response.json())
-      .then(data => {
-        let resultArray = data.data;
-        resultArray._columns = data.columns || Object.keys(resultArray[0] || {});
-        displayTable(resultArray);
-        state.result = document.getElementById("tableContainer").innerHTML;
-        state.data = resultArray;
-        state.header = document.getElementById("tableHeader").textContent;
-        setRunButtonLoading(false);
+      state.basicSQL = sql;
+      let parentState = boxState[state.parent];
+      if (!parentState || !parentState.data) {
+        setTimeout(() => { runQueryForBox(selectedBox); }, 1500);
+        return;
+      }
+      let payload = { sql: state.basicSQL, data: parentState.data };
+      fetch("http://127.0.0.1:8000/sql_transform", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       })
-      .catch(err => {
-        console.error("Error running SQL transform:", err);
-        alert("Error running SQL transform.");
-        setRunButtonLoading(false);
-      });
+        .then(response => response.json())
+        .then(data => {
+          let resultArray = data.data;
+          resultArray._columns = data.columns || Object.keys(resultArray[0] || {});
+          displayTable(resultArray);
+          state.result = document.getElementById("tableContainer").innerHTML;
+          state.data = resultArray;
+          state.header = document.getElementById("tableHeader").textContent;
+          setRunButtonLoading(false);
+        })
+        .catch(err => {
+          console.error("Error running SQL transform:", err);
+          alert("Error running SQL transform.");
+          setRunButtonLoading(false);
+        });
+    } else {
+      state.advancedSQL = sqlEditorCM.getValue();
+      let parentState = boxState[state.parent];
+      if (!parentState || !parentState.data) {
+        setTimeout(() => { runQueryForBox(selectedBox); }, 1500);
+        return;
+      }
+      let payload = { sql: state.advancedSQL, data: parentState.data };
+      fetch("http://127.0.0.1:8000/sql_transform", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+        .then(response => response.json())
+        .then(data => {
+          let resultArray = data.data;
+          resultArray._columns = data.columns || Object.keys(resultArray[0] || {});
+          displayTable(resultArray);
+          state.result = document.getElementById("tableContainer").innerHTML;
+          state.data = resultArray;
+          state.header = document.getElementById("tableHeader").textContent;
+          setRunButtonLoading(false);
+        })
+        .catch(err => {
+          console.error("Error running SQL transform:", err);
+          alert("Error running SQL transform.");
+          setRunButtonLoading(false);
+        });
+    }
   } else if (selectedBox.dataset.type === "plot") {
     let xButton = document.getElementById("xSelectButton");
     let xField = xButton.dataset.selected || xButton.querySelector("span").textContent.trim();
@@ -829,11 +1080,11 @@ function runQuery() {
     setRunButtonLoading(false);
   } else if (selectedBox.dataset.type === "join") {
     let joinType = document.getElementById("joinTypeDisplay").textContent || "Inner";
-    let leftJoinColumn = document.getElementById("leftJoinColumn").value;
-    let rightJoinColumn = document.getElementById("rightJoinColumn").value;
+    let leftVal = document.getElementById("leftJoinColumnButton").dataset.selected || "";
+    let rightVal = document.getElementById("rightJoinColumnButton").dataset.selected || "";
     state.joinType = joinType;
-    state.leftJoinColumn = leftJoinColumn;
-    state.rightJoinColumn = rightJoinColumn;
+    state.leftJoinColumn = leftVal;
+    state.rightJoinColumn = rightVal;
     let leftState = boxState[state.leftParent];
     let rightState = boxState[state.rightParent];
     if (!leftState || !leftState.data || !rightState || !rightState.data) {
@@ -844,8 +1095,8 @@ function runQuery() {
     let payload = {
       left_data: leftState.data,
       right_data: rightState.data,
-      left_join_column: leftJoinColumn,
-      right_join_column: rightJoinColumn,
+      left_join_column: leftVal,
+      right_join_column: rightVal,
       join_type: joinType
     };
     fetch("http://127.0.0.1:8000/sql_join", {
@@ -937,7 +1188,7 @@ function saveConfig() {
       } else if (box.dataset.type === "table") {
         runArgs = { table: state.table || "", start_time: state.start_time || "", end_time: state.end_time || "", parent: state.parent || null };
       } else if (box.dataset.type === "sql") {
-        runArgs = { sql: state.sql || "", parent: state.parent || null, sqlMode: state.sqlMode || "basic" };
+        runArgs = { basicSQL: state.basicSQL || "", advancedSQL: state.advancedSQL || "", parent: state.parent || null, sqlMode: state.sqlMode || "basic" };
       } else if (box.dataset.type === "plot") {
         runArgs = { xField: state.xField || "", yFields: state.yFields || [], parent: state.parent || null };
       } else if (box.dataset.type === "join") {
@@ -1010,24 +1261,15 @@ function loadConfig(event) {
 // Initialization
 // ============================================================
 document.addEventListener("DOMContentLoaded", () => {
+  // Add a logo at the top right
+  const logo = document.createElement("div");
+  logo.id = "logo";
+  logo.textContent = "DB Navigator";
+  document.body.appendChild(logo);
+
   // Create the InfluxDB box on startup.
   createBox("InfluxDB", "influx");
   runQuery();
-
-  // Header button event listeners.
-  document.getElementById("runButton").addEventListener("click", runQuery);
-  document.getElementById("exportBtn").addEventListener("click", exportCSV);
-  document.getElementById("maximizeBtn").addEventListener("click", toggleMaximize);
-  document.getElementById("saveConfigBtn").addEventListener("click", saveConfig);
-  document.getElementById("loadConfigBtn").addEventListener("click", () => {
-    document.getElementById("loadConfigInput").click();
-  });
-  document.getElementById("loadConfigInput").addEventListener("change", loadConfig);
-
-  // Window resize events (from utils.js).
-  document.getElementById("horizontalDivider").addEventListener("mousedown", startResizeHorizontal);
-  document.getElementById("verticalDivider").addEventListener("mousedown", startResizeVertical);
-  window.addEventListener("resize", updateConnectors);
 
   // Table query dropdown with search filtering.
   document.addEventListener("click", function(e) {
@@ -1052,6 +1294,34 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!e.target.closest(".table-dropdown")) tqMenu.style.display = "none";
     }
   });
+  
+  // Reset SQL editors
+  const resetBtn = document.getElementById("resetBasicBtn");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", function() {
+      const state = boxState[selectedBox.id];
+      if (state.sqlMode === "basic") {
+        resetBasicSQL();
+      } else if (state.sqlMode === "advanced") {
+        resetAdvancedSQL();
+      }
+    });
+  }
+  
+  // Navigator and header button event listeners.
+  document.getElementById("runButton").addEventListener("click", runQuery);
+  document.getElementById("exportBtn").addEventListener("click", exportCSV);
+  document.getElementById("maximizeBtn").addEventListener("click", toggleMaximize);
+  document.getElementById("saveConfigBtn").addEventListener("click", saveConfig);
+  document.getElementById("loadConfigBtn").addEventListener("click", () => {
+    document.getElementById("loadConfigInput").click();
+  });
+  document.getElementById("loadConfigInput").addEventListener("change", loadConfig);
+
+  // Window resize events.
+  document.getElementById("horizontalDivider").addEventListener("mousedown", startResizeHorizontal);
+  document.getElementById("verticalDivider").addEventListener("mousedown", startResizeVertical);
+  window.addEventListener("resize", updateConnectors);
 
   // Operator dropdown logic.
   document.addEventListener("click", function(e) {
@@ -1068,10 +1338,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const text = option.querySelector(".operator-name").textContent;
       document.getElementById("operatorDisplay").textContent = text;
       document.querySelector(".operator-dropdown-menu").style.display = "none";
+      updateSQLFromBasic();
     });
   });
 
-  // Join dropdown logic.
+  // Join dropdown logic for join type (simple dropdown)
   document.addEventListener("click", function(e) {
     const joinBtn = document.getElementById("joinTypeButton");
     const joinMenu = document.querySelector(".join-dropdown-menu");
@@ -1083,12 +1354,28 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.querySelectorAll(".join-dropdown-menu .join-option").forEach(option => {
     option.addEventListener("click", function() {
-      const text = option.querySelector(".join-name").textContent;
-      document.getElementById("joinTypeDisplay").textContent = text;
+      document.getElementById("joinTypeDisplay").textContent = this.textContent;
       document.querySelector(".join-dropdown-menu").style.display = "none";
     });
   });
-
+  
+  // LEFT/RIGHT Join column buttons event listeners.
+  document.getElementById("leftJoinColumnButton").addEventListener("click", function(e) {
+    e.stopPropagation();
+    const menu = document.getElementById("leftJoinDropdownMenu");
+    menu.style.display = menu.style.display === "block" ? "none" : "block";
+  });
+  document.getElementById("rightJoinColumnButton").addEventListener("click", function(e) {
+    e.stopPropagation();
+    const menu = document.getElementById("rightJoinDropdownMenu");
+    menu.style.display = menu.style.display === "block" ? "none" : "block";
+  });
+  document.addEventListener("click", function() {
+    document.querySelectorAll(".join-dropdown-menu2").forEach(menu => {
+      menu.style.display = "none";
+    });
+  });
+  
   // Transform Box editor dropdown toggles.
   document.getElementById("selectButton").addEventListener("click", function(e) {
     e.stopPropagation();
@@ -1101,7 +1388,7 @@ document.addEventListener("DOMContentLoaded", () => {
     menu.style.display = menu.style.display === "block" ? "none" : "block";
   });
   
-  // Additional WHERE condition buttons (if any exist).
+  // Additional WHERE condition buttons.
   let condCount = 5;
   for (let index = 0; index < condCount; index++) {
     const button = document.getElementById(`additionalWhereButton_${index}`);
@@ -1125,43 +1412,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   
-  // Toggle advanced mode.
+  // Toggle Advanced/Basic mode.
   document.getElementById("toggleAdvanced").addEventListener("click", function() {
     let state = boxState[selectedBox.id];
     if (state.sqlMode !== "advanced") {
-      let selectClause = document.getElementById("selectDisplay").textContent;
-      let whereClause = "";
-      let mainWhere = document.getElementById("whereDisplay").textContent;
-      let selValues = (mainWhere && mainWhere !== "Select columns") ? mainWhere.split(",") : [];
-      if (selValues.length > 0) { whereClause = selValues.join(", "); }
-      document.querySelectorAll("#additionalWhereContainer .where-condition").forEach(cond => {
-        let col = cond.querySelector(".where-button span").textContent.trim();
-        let opTxt = cond.querySelector(".operator-button").textContent;
-        let opSym = { "Equal": "=", "Less Than": "<", "Greater Than": ">" }[opTxt] || "=";
-        let val = cond.querySelector(".whereValue").value.trim();
-        let operatorLabelElem = cond.querySelector(".where-operator-label");
-        let opLabel = (operatorLabelElem && operatorLabelElem.textContent.trim()) || "AND";
-        if(col && val) {
-          if (whereClause !== "") { whereClause += " " + opLabel + " "; }
-          whereClause += col + " " + opSym + " " + val;
-        }
-      });
-      let sql = "SELECT " + ((selectClause && selectClause !== "Select columns") ? selectClause : "*") + " FROM df";
-      if(whereClause) { sql += " WHERE " + whereClause; }
-      state.sql = sql;
-      sqlEditorCM.setValue(sql);
-      sqlEditorCM.focus();
       document.getElementById("sqlBasicEditor").style.display = "none";
       document.getElementById("sqlAdvancedEditor").style.display = "block";
       this.textContent = "Basic";
       state.sqlMode = "advanced";
-      setTimeout(() => { sqlEditorCM.refresh(); }, 0);
+      sqlEditorCM.setValue(state.advancedSQL || "SELECT * FROM df");
     } else {
       document.getElementById("sqlBasicEditor").style.display = "block";
       document.getElementById("sqlAdvancedEditor").style.display = "none";
       this.textContent = "Advanced";
       state.sqlMode = "basic";
     }
+  });
+  
+  // Add Import Basic button to advanced tab.
+  let importBtn = document.getElementById("importBasicBtn");
+  document.getElementById("sqlAdvancedEditor").appendChild(importBtn);
+  importBtn.addEventListener("click", function() {
+    let state = boxState[selectedBox.id];
+    state.advancedSQL = state.basicSQL || "SELECT * FROM df";
+    sqlEditorCM.setValue(state.advancedSQL);
   });
   
   // AND/OR buttons.
@@ -1208,7 +1482,6 @@ document.addEventListener("DOMContentLoaded", () => {
                           </div>`;
     const addBtn = document.getElementById("addYBtn");
     yContainer.insertBefore(groupDiv, addBtn);
-    // Refresh the Y dropdown options based on the parent's data.
     updatePlotDropdowns(selectedBox.id);
     document.getElementById(`ySelectButton_${newIndex}`).addEventListener("click", function(e) {
       e.stopPropagation();
@@ -1220,7 +1493,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
   
-  // Initialize CodeMirror for SQL autocomplete.
+  // Initialize CodeMirror for Advanced SQL editor.
   const sqlTextarea = document.getElementById("sqlEditorText");
   sqlEditorCM = CodeMirror.fromTextArea(sqlTextarea, {
     mode: "text/x-sql",
@@ -1239,6 +1512,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (change.text[0].match(/\w/)) {
       CodeMirror.commands.autocomplete(cm, null, { completeSingle: false });
+    }
+  });
+  sqlEditorCM.on("change", function(cm) {
+    if (selectedBox && selectedBox.dataset.type === "sql") {
+      boxState[selectedBox.id].advancedSQL = cm.getValue();
+    }
+  });
+  
+  // Make changes to basic SQL editor on field changes.
+  const basicElements = ["selectDisplay", "whereDisplay", "operatorDisplay", "whereValue"];
+  basicElements.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("change", updateSQLFromBasic);
+      el.addEventListener("input", updateSQLFromBasic);
+      el.addEventListener("click", updateSQLFromBasic);
     }
   });
 });
