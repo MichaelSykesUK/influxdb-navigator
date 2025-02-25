@@ -1033,46 +1033,10 @@ function addWhereRow(operatorLabel, e) {
 // ============================================================
 
 document.addEventListener("DOMContentLoaded", () => {
+
   // Create the InfluxDB box on startup.
   createBox("InfluxDB", "influx");
   runQuery();
-
-  // Table query dropdown with search filtering.
-  document.addEventListener("click", function(e) {
-    const tqButton = document.getElementById("tableQueryButton");
-    const tqMenu = document.getElementById("tableDropdownMenu");
-    if (tqButton && (e.target === tqButton || tqButton.contains(e.target))) {
-      tqMenu.style.display = tqMenu.style.display === "block" ? "none" : "block";
-      if (tqMenu.style.display === "block" && !tqMenu.querySelector(".dropdown-search")) {
-        let searchInput = document.createElement("input");
-        searchInput.type = "text";
-        searchInput.className = "dropdown-search";
-        searchInput.placeholder = "Search...";
-        tqMenu.insertBefore(searchInput, tqMenu.firstChild);
-        searchInput.addEventListener("keyup", function() {
-          let filter = searchInput.value.toLowerCase();
-          tqMenu.querySelectorAll(".table-option").forEach(option => {
-            option.style.display = option.textContent.toLowerCase().indexOf(filter) > -1 ? "" : "none";
-          });
-        });
-      }
-    } else {
-      if (!e.target.closest(".table-dropdown")) tqMenu.style.display = "none";
-    }
-  });
-
-  // Reset SQL editors.
-  const resetBtn = document.getElementById("resetBasicBtn");
-  if (resetBtn) {
-    resetBtn.addEventListener("click", function() {
-      const state = boxState[selectedBox.id];
-      if (state.sqlMode === "basic") {
-        resetBasicSQL();
-      } else if (state.sqlMode === "advanced") {
-        resetAdvancedSQL();
-      }
-    });
-  }
 
   // Navigator and header button event listeners.
   document.getElementById("runButton").addEventListener("click", runQuery);
@@ -1088,6 +1052,57 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("horizontalDivider").addEventListener("mousedown", startResizeHorizontal);
   document.getElementById("verticalDivider").addEventListener("mousedown", startResizeVertical);
   window.addEventListener("resize", updateConnectors);
+
+  // Reset SQL editors.
+  const resetBtn = document.getElementById("resetBasicBtn");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", function() {
+      const state = boxState[selectedBox.id];
+      if (state.sqlMode === "basic") {
+        resetBasicSQL();
+      } else if (state.sqlMode === "advanced") {
+        resetAdvancedSQL();
+      }
+    });
+  }
+
+  // Listening function for dropdowns
+  function setupDropdownToggle(buttonIds, menuIds) {
+    buttonIds.forEach((buttonId, index) => {
+      const button = document.getElementById(buttonId);
+      const menu = document.getElementById(menuIds[index]);
+  
+      if (button && menu) {
+        button.addEventListener("click", function (e) {
+          e.stopPropagation();
+          menu.style.display = menu.style.display === "block" ? "none" : "block";
+        });
+      }
+    });
+  
+    // Click off to close all menus when clicking elsewhere
+    document.addEventListener("click", function () {
+      menuIds.forEach(menuId => {
+        const menu = document.getElementById(menuId);
+        if (menu) menu.style.display = "none";
+      });
+    });
+  }
+  
+  // Define button IDs and corresponding dropdown menu IDs
+  setupDropdownToggle(
+    ["tableQueryButton", "xSelectButton", "ySelectButton_1", "selectButton", "whereButton", "joinTypeButton", "leftJoinColumnButton", "rightJoinColumnButton"],
+    ["tableDropdownMenu", "xSelectDropdownMenu", "ySelectDropdownMenu_1", "selectDropdownMenu", "whereDropdownMenu", "joinTypeDropdownMenu", "leftJoinDropdownMenu", "rightJoinDropdownMenu"]
+  );
+  
+  // Additional WHERE condition buttons
+  let condCount = 5;
+  for (let index = 0; index < condCount; index++) {
+    const buttonId = `additionalWhereButton_${index}`;
+    const menuId = `whereDropdownMenu_${index}`;
+  
+    setupDropdownToggle([buttonId], [menuId]);
+  }
 
   // Operator dropdown logic.
   document.addEventListener("click", function(e) {
@@ -1106,76 +1121,6 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelector(".operator-dropdown-menu").style.display = "none";
       updateSQLFromBasic();
     });
-  });
-
-  // Join dropdown logic for join type.
-  document.addEventListener("click", function(e) {
-    const joinBtn = document.getElementById("joinTypeButton");
-    const joinMenu = document.querySelector(".join-dropdown-menu");
-    if (joinBtn && (e.target === joinBtn || joinBtn.contains(e.target))) {
-      joinMenu.style.display = joinMenu.style.display === "block" ? "none" : "block";
-    } else {
-      if (!e.target.closest(".join-dropdown")) joinMenu.style.display = "none";
-    }
-  });
-  document.querySelectorAll(".join-dropdown-menu .join-option").forEach(option => {
-    option.addEventListener("click", function() {
-      document.getElementById("joinTypeDisplay").textContent = this.textContent;
-      document.querySelector(".join-dropdown-menu").style.display = "none";
-    });
-  });
-
-  // LEFT/RIGHT Join column buttons event listeners.
-  document.getElementById("leftJoinColumnButton").addEventListener("click", function(e) {
-    e.stopPropagation();
-    const menu = document.getElementById("leftJoinDropdownMenu");
-    menu.style.display = menu.style.display === "block" ? "none" : "block";
-  });
-  document.getElementById("rightJoinColumnButton").addEventListener("click", function(e) {
-    e.stopPropagation();
-    const menu = document.getElementById("rightJoinDropdownMenu");
-    menu.style.display = menu.style.display === "block" ? "none" : "block";
-  });
-  document.addEventListener("click", function() {
-    document.querySelectorAll(".join-dropdown-menu2").forEach(menu => {
-      menu.style.display = "none";
-    });
-  });
-
-  // Transform Box editor dropdown toggles.
-  document.getElementById("selectButton").addEventListener("click", function(e) {
-    e.stopPropagation();
-    const menu = document.getElementById("selectDropdownMenu");
-    menu.style.display = menu.style.display === "block" ? "none" : "block";
-  });
-  document.getElementById("whereButton").addEventListener("click", function(e) {
-    e.stopPropagation();
-    const menu = document.getElementById("whereDropdownMenu");
-    menu.style.display = menu.style.display === "block" ? "none" : "block";
-  });
-
-  // Additional WHERE condition buttons.
-  let condCount = 5;
-  for (let index = 0; index < condCount; index++) {
-    const button = document.getElementById(`additionalWhereButton_${index}`);
-    if (button) {
-      button.addEventListener("click", function (e) {
-        e.stopPropagation();
-        const menu = document.getElementById(`whereDropdownMenu_${index}`);
-        if (menu) {
-          menu.style.display = menu.style.display === "block" ? "none" : "block";
-        }
-      });
-    }
-  }
-
-  document.addEventListener("click", function() {
-    document.getElementById("selectDropdownMenu").style.display = "none";
-    document.getElementById("whereDropdownMenu").style.display = "none";
-    for (let index = 0; index < condCount; index++) {
-      let btn = document.getElementById(`additionalWhereButton_${index}`);
-      if (btn) btn.style.display = "none";
-    }
   });
 
   // Toggle Advanced/Basic mode.
@@ -1212,22 +1157,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("addWhereOr").addEventListener("click", function(e) {
     e.preventDefault();
     addWhereRow("OR", e);
-  });
-
-  // Plot Box editor dropdown toggles.
-  document.getElementById("xSelectButton").addEventListener("click", function(e) {
-    e.stopPropagation();
-    const menu = document.getElementById("xSelectDropdownMenu");
-    menu.style.display = menu.style.display === "block" ? "none" : "block";
-  });
-  document.getElementById("ySelectButton_1").addEventListener("click", function(e) {
-    e.stopPropagation();
-    const menu = document.getElementById("ySelectDropdownMenu_1");
-    menu.style.display = menu.style.display === "block" ? "none" : "block";
-  });
-  document.addEventListener("click", function() {
-    document.getElementById("xSelectDropdownMenu").style.display = "none";
-    document.getElementById("ySelectDropdownMenu_1").style.display = "none";
   });
 
   // Y values plus button.
