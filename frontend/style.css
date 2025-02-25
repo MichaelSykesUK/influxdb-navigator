@@ -24,6 +24,17 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0;
 }
 
+
+:root {
+  --primary-color: #3d82cb;
+  --primary-hover: #51d0a2;
+  --border-color: hsl(0, 0%, 87%);
+  --background-light: hsl(0, 0%, 100%);
+  --background-dark: hsl(0, 0%, 99%);
+  --background-other: hsl(0, 0%, 87%);
+  --background-header: hsl(0, 0%, 96%);
+}
+
 /*==============================================================================
    Layout Containers
 ==============================================================================*/
@@ -36,8 +47,8 @@ h1, h2, h3, h4, h5, h6 {
 
 #whiteboard {
   position: relative;
-  background: #f7f7f7;
-  border-bottom: 1px solid #ddd;
+  background: var(--background-light);
+  border-bottom: 1px solid var(--border-color);
   width: 100%;
   height: 50%;
   overflow: hidden;
@@ -57,7 +68,7 @@ h1, h2, h3, h4, h5, h6 {
 .divider.horizontal {
   height: 5px;
   width: 100%;
-  background: #ccc;
+  background: var(--background-other);
   cursor: ns-resize;
   z-index: 3000;
 }
@@ -75,7 +86,7 @@ h1, h2, h3, h4, h5, h6 {
 #leftTerminal {
   width: 30%;
   height: 100%;
-  background: #f9f9f9;
+  background: var(--background-dark);
   display: flex;
   flex-direction: column;
   min-width: 550px;
@@ -86,8 +97,8 @@ h1, h2, h3, h4, h5, h6 {
   justify-content: space-between;
   align-items: center;
   padding: 8px;
-  background: #eee;
-  border-bottom: 1px solid #ddd;
+  background: var(--background-header);
+  border-bottom: 1px solid var(--border-color);
   height: 28px;
   box-sizing: border-box;
 }
@@ -102,7 +113,7 @@ h1, h2, h3, h4, h5, h6 {
 #runButton {
   background: none;
   border: none;
-  color: #007acc;
+  color: var(--primary-color);
   font-size: 12px;
   cursor: pointer;
   padding: 0;
@@ -111,15 +122,19 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   transition: color 0.3s ease, background-color 0.3s ease;
 }
+
+#runButton svg {
+  fill: var(--primary-color);
+}
 #runButton:hover svg {
-  fill: #007380 !important;
+  fill: var(--primary-hover);
 }
 
 /* Right Terminal */
 #rightTerminal {
   width: 70%;
   height: 100%;
-  background: #fff;
+  background: var(--background-light);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -131,8 +146,8 @@ h1, h2, h3, h4, h5, h6 {
   justify-content: space-between;
   align-items: center;
   padding: 8px;
-  background: #eee;
-  border-bottom: 1px solid #ddd;
+  background: var(--background-header);
+  border-bottom: 1px solid var(--border-color);
   height: 28px;
 }
 
@@ -149,7 +164,7 @@ h1, h2, h3, h4, h5, h6 {
 .header-buttons button {
   background: none;
   border: none;
-  color: #007acc;
+  color: var(--primary-color) !important;
   font-size: 12px;
   cursor: pointer;
   padding: 5px;
@@ -159,10 +174,14 @@ h1, h2, h3, h4, h5, h6 {
   transition: color 0.3s ease, transform 0.3s ease;
 }
 .header-buttons button:hover {
-  color: #007380;
+  color: var(--primary-hover);
 }
 .header-buttons button:hover svg {
-  fill: #007380 !important;
+  fill: var(--primary-hover);
+}
+
+.header-buttons button svg {
+  fill: var(--primary-color);
 }
 
 /* Table container */
@@ -170,14 +189,14 @@ h1, h2, h3, h4, h5, h6 {
   flex: 1;
   padding: 10px;
   overflow: auto;
-  background: #fff;
+  background: var(--background-light);
   text-align: left;
 }
 
 /* Vertical divider */
 .divider.vertical {
   width: 5px;
-  background: #ccc;
+  background: var(--background-other);
   cursor: ew-resize;
   flex-shrink: 0;
 }
@@ -211,7 +230,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Inter', sans-serif !important;
   font-size: 12px !important;
   color: #000;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   height: 30px !important;
   padding: 5px;
@@ -230,15 +249,15 @@ select::placeholder {
   position: relative;
   display: inline-block;
   height: 30px;
-  background-color: #fff;
+  background-color: var(--background-light);
 }
 
 .custom-dropdown button {
   width: 100%;
   padding: 5px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
-  background-color: #fff;
+  background-color: var(--background-light);
   color: #000;
   cursor: pointer;
   text-align: left;
@@ -246,10 +265,11 @@ select::placeholder {
   height: 30px;
 }
 
-/* New dropdowns for transform editor: force white background and standard border */
+/* New dropdowns for transform editor: force standard border */
 .select-dropdown button,
-.where-dropdown button {
-  width: 200px !important;
+.where-dropdown button,
+.plot-dropdown button {
+  width: 250px !important;
 }
 
 .operator-dropdown,
@@ -267,8 +287,8 @@ select::placeholder {
   top: 100% !important;
   left: 0 !important;
   right: 0 !important;
-  background: #fff !important;
-  border: 1px solid #ddd !important;
+  background: var(--background-light) !important;
+  border: 1px solid var(--border-color) !important;
   border-radius: 4px !important;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
   max-height: 250px !important;
@@ -278,15 +298,17 @@ select::placeholder {
   width: 100% !important;
 }
 
+
+
 .table-dropdown-menu .dropdown-search,
 .select-dropdown-menu .dropdown-search,
 .where-dropdown-menu .dropdown-search,
 .plot-dropdown-menu .dropdown-search,
 .join-dropdown-menu2 .dropdown-search  {
-  width: 100% !important;
+  width: 100%;
   padding: 5px;
   border: none;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--border-color);
   font-size: 12px !important;
   font-family: 'Inter', sans-serif !important;
 }
@@ -311,8 +333,17 @@ select::placeholder {
 .plot-dropdown-menu .plot-ooption:hover,
 .join-dropdown-menu .join-option:hover {
   background-color: #f0f8ff;
-  color: #007acc;
+  color: var(--primary-color);
 }
+
+
+.plot-dropdown-menu,
+.plot-dropdown-menu .dropdown-search,
+.plot-dropdown-menu .plot-option {
+  width: 250px !important;
+}
+
+
 
 /* Operator dropdown menu */
 .operator-dropdown-menu {
@@ -321,8 +352,8 @@ select::placeholder {
   left: 0;
   right: 0;
   width: 100% !important;
-  background: #fff;
-  border: 1px solid #ddd;
+  background: var(--background-light);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
   z-index: 2000;
@@ -344,8 +375,8 @@ select::placeholder {
   left: 0;
   right: 0;
   width: 100% !important;
-  background: #fff;
-  border: 1px solid #ddd;
+  background: var(--background-light);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
   z-index: 2000;
@@ -367,6 +398,7 @@ select::placeholder {
   display: flex;
   align-items: center;
   gap: 5px;
+  margin-top: 5px;
   margin-bottom: 5px;
 }
 .sql-row label {
@@ -399,8 +431,8 @@ select::placeholder {
   position: absolute;
   width: 150px;
   height: 100px;
-  background: #f1f1f1;
-  border: 1px solid #ddd;
+  background: var(--background-dark);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -414,13 +446,13 @@ select::placeholder {
   z-index: 2;
 }
 .box:hover {
-  border-color: #fad900;
+  border-color: hsl(0, 0%, 60%);
 }
 .box.selected {
-  border-color: #007acc;
+  border-color: hsl(237, 86%, 61%)
 }
 .box.selected:hover {
-  border-color: #fad900;
+  border-color: hsl(0, 0%, 60%);
 }
 .box .box-title {
   text-align: center;
@@ -438,8 +470,8 @@ select::placeholder {
   position: absolute;
   width: 20px;
   height: 20px;
-  background: #007acc;
-  color: #fff;
+  background: var(--primary-color);
+  color: var(--background-light);
   border: none;
   border-radius: 4px;
   font-size: 12px;
@@ -455,8 +487,8 @@ select::placeholder {
   height: 30px !important;
   border-radius: 8px !important;
   margin-left: 5px;
-  background: #007acc;
-  color: #fff;
+  background: var(--primary-color);
+  color: var(--background-light);
   border: none;
   font-size: 12px;
   cursor: pointer;
@@ -465,14 +497,14 @@ select::placeholder {
   align-items: center;
   transition: background-color 0.2s ease;
 }
-.inline-plus-btn2 {
+.and-or-btn {
   position: relative;
   width: 35px !important;
   height: 20px !important;
   border-radius: 5px !important;
   margin-left: 5px;
-  background: #007acc;
-  color: #fff;
+  background: var(--primary-color);
+  color: var(--background-light);
   border: none;
   font-size: 12px;
   cursor: pointer;
@@ -487,8 +519,8 @@ select::placeholder {
 .query-btn:hover,
 .minus-btn:hover,
 .inline-plus-btn:hover,
-.inline-plus-btn2:hover {
-  background-color: #007380;
+.and-or-btn:hover {
+  background-color: var(--primary-hover);
 }
 
 .query-btn {
@@ -511,8 +543,8 @@ select::placeholder {
   position: absolute;
   width: 20px;
   height: 20px;
-  background: #007acc;
-  color: #fff;
+  background: var(--primary-color);
+  color: var(--background-light);
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -529,14 +561,15 @@ select::placeholder {
 }
 
 /* Remove condition button */
-.removeWhereBtn {
-  background: #007acc;
-  color: #fff;
+.removeWhereBtn,
+.remove-y-btn {
+  background: var(--primary-color);
+  color: var(--background-light);
   border: none;
   border-radius: 25%;
   width: 20px;
   height: 20px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
@@ -544,8 +577,9 @@ select::placeholder {
   padding: 0;
   transition: background-color 0.2s ease;
 }
-.removeWhereBtn:hover {
-  background-color: #007380;
+.removeWhereBtn:hover,
+.remove-y-btn:hover {
+  background-color: var(--primary-hover);
 }
 
 /*----------------------------------------------------------------------------
@@ -553,8 +587,8 @@ select::placeholder {
 ----------------------------------------------------------------------------*/
 .advanced-btn,
 .import-basic-btn {
-  background: #007acc;
-  color: #fff;
+  background: var(--primary-color);
+  color: var(--background-light);
   border: none;
   border-radius: 4px;
   padding: 5px;
@@ -570,14 +604,14 @@ select::placeholder {
 }
 .advanced-btn:hover,
 .import-basic-btn:hover {
-  background: #007380;
+  background: var(--primary-hover);
 }
 
 /*----------------------------------------------------------------------------
    CodeMirror SQL Editor
 ----------------------------------------------------------------------------*/
 .CodeMirror {
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   font-size: 12px;
   height: auto;
 }
@@ -595,8 +629,8 @@ select::placeholder {
 }
 
 .custom-dropdown-btn {
-  background-color: #fff;
-  border: 1px solid #ddd;
+  background-color: var(--background-light);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 5px;
   font-size: 12px;
@@ -607,9 +641,9 @@ select::placeholder {
   margin-top: 5px;
   font-family: monospace;
   font-size: 12px;
-  background-color: #ffffff;
+  background-color: var(--background-light);
   padding: 5px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   z-index: 100;
 }
 
@@ -617,15 +651,15 @@ select::placeholder {
    Import Basic Button Styling
 ----------------------------------------------------------------------------*/
 #importBasicBtn {
-  background: #007bff;
-  color: white;
+  background: var(--primary-color);
+  color: var(--background-light);
   padding: 5px 10px;
   border-radius: 5px;
   cursor: pointer;
   display: inline-block;
 }
 #importBasicBtn:hover {
-  background: #0056b3;
+  background: var(--primary-hover);
 }
 
 /*----------------------------------------------------------------------------
@@ -640,10 +674,49 @@ select::placeholder {
 ----------------------------------------------------------------------------*/
 #logo {
   position: fixed;
-  top: 10px;
-  right: 10px;
-  font-family: 'Lucida Console', Monaco, monospace;
-  font-size: 36px;
-  color: #007acc;
+  top: 20px;
+  right: 30px;
+  font-family: 'Inter', sans-serif;
+  font-size: 32px;
+  color: var(--primary-color);
   z-index: 4000;
+  font-weight: bold;
+  text-align: right;
+  align-items: top;
+  justify-content: right;
 }
+
+
+
+/*----------------------------------------------------------------------------
+   Animations
+----------------------------------------------------------------------------*/
+.spinner {
+  border: 2px solid var(--background-light);
+  border-top: 2px solid var(--primary-color);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+  margin: auto;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes pulsate {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+
+.where-dropdown-menu, .select-dropdown-menu, .plot-dropdown-menu, .join-dropdown-menu, .join-dropdown-menu2 {
+  z-index: 3000 !important;
+}
+/* If needed, ensure the container has overflow visible: */
+#container, #whiteboard {
+  overflow: visible;
+}
+
+

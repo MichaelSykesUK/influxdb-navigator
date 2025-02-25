@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/addon/hint/show-hint.min.css">
 </head>
 <body>
+  <div id="logo">Vertical Data Navigator</div>
   <div id="container">
     <!-- Whiteboard (Canvas) -->
     <div id="whiteboard">
@@ -55,9 +56,12 @@
 
           <!-- Transform Editor -->
           <div id="sqlEditor" style="display:none;">
+            <!-- Transform toggles -->
             <button id="toggleAdvanced" class="advanced-btn">Advanced</button>
             <button id="resetBasicBtn" class="advanced-btn">Reset</button>
+            <!-- Basic SQL editor -->
             <div id="sqlBasicEditor">
+              <!-- Select Group -->
               <div class="sql-row">
                 <label for="selectDisplay">SELECT:</label>
                 <div class="custom-dropdown select-dropdown">
@@ -67,6 +71,7 @@
                   <div id="selectDropdownMenu" class="select-dropdown-menu" style="display:none;"></div>
                 </div>
               </div>
+              <!-- Where Group -->
               <div class="sql-row">
                 <label for="whereDisplay">WHERE:</label>
                 <div class="custom-dropdown where-dropdown">
@@ -93,23 +98,30 @@
                 </div>
                 <input type="text" id="whereValue" placeholder='e.g. BAT1'>
               </div>
-              <div class="sql-row where-additional-buttons" style="margin-top:5px;">
-                <label style="width:60px;"></label>
-                <button id="addWhereAnd" class="inline-plus-btn2" title="Add WHERE condition with AND">AND</button>
-                <button id="addWhereOr" class="inline-plus-btn2" title="Add WHERE condition with OR">OR</button>
+              <!-- AND OR Extension Group -->
+              <div class="sql-row where-additional-buttons">
+                <label></label>
+                <button id="addWhereAnd" class="and-or-btn" title="Add WHERE condition with AND">AND</button>
+                <button id="addWhereOr" class="and-or-btn" title="Add WHERE condition with OR">OR</button>
               </div>
+              <!-- Additional Where Group (Container, content added by js)-->
               <div id="additionalWhereContainer"></div>
+              <!-- SQL Preview -->
               <div id="basicSQLPreview" class="basic-sql-preview"></div>
             </div>
+            <!-- ADvanced SQL Editor -->
             <div id="sqlAdvancedEditor" style="display:none;">
-              <label for="sqlEditorText">Enter SQL statement below:</label>
-              <textarea id="sqlEditorText" rows="10" spellcheck="false">SELECT * FROM df</textarea>
-              <button id="importBasicBtn" class="import-basic-btn">Import Basic</button>
+              <div class="form-group">
+                <label for="sqlEditorText">Enter SQL statement below:</label>
+                <textarea id="sqlEditorText" rows="10" spellcheck="false">SELECT * FROM df</textarea>
+                <button id="importBasicBtn" class="import-basic-btn">Import Basic</button>
+              </div>
             </div>
           </div>
 
           <!-- Plot Editor -->
           <div id="plotForm" style="display:none;">
+            <!-- X Values -->
             <div class="form-group">
               <label for="xSelectDisplay">X Values:</label>
               <div class="custom-dropdown plot-dropdown">
@@ -119,6 +131,7 @@
                 <div class="plot-dropdown-menu" id="xSelectDropdownMenu"></div>
               </div>
             </div>
+            <!-- Y Values (in container appended to by js) -->
             <div id="ySelectContainer">
               <div class="y-values-wrapper">
                 <div class="form-group y-select-group">
@@ -129,18 +142,20 @@
                     </button>
                     <div class="plot-dropdown-menu" id="ySelectDropdownMenu_1"></div>
                   </div>
+                  <!-- Add Y Button -->
+                  <button id="addYBtn" class="inline-plus-btn" title="Add another Y Value">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#ffffff" viewBox="0 0 24 24">
+                      <path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                  </button>
                 </div>
               </div>
-              <button id="addYBtn" class="inline-plus-btn" title="Add another Y Value">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#ffffff" viewBox="0 0 24 24">
-                  <path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                </svg>
-              </button>
             </div>
           </div>
 
           <!-- Join Editor -->
           <div id="joinForm" style="display:none;">
+            <!-- Join Type -->
             <div class="form-group">
               <label for="joinTypeDisplay">Join Type:</label>
               <div class="custom-dropdown join-dropdown">
@@ -166,6 +181,7 @@
                 </div>
               </div>
             </div>
+            <!-- Left Join column -->
             <div class="form-group">
               <label for="leftJoinColumn">Left Join Column:</label>
               <div class="custom-dropdown join-dropdown">
@@ -175,6 +191,7 @@
                 <div class="join-dropdown-menu2" id="leftJoinDropdownMenu"></div>
               </div>
             </div>
+            <!-- Right Join column -->
             <div class="form-group">
               <label for="rightJoinColumn">Right Join Column:</label>
               <div class="custom-dropdown join-dropdown">
