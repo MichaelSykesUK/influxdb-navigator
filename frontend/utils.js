@@ -206,22 +206,42 @@ function getParentColumns(plotBoxId) {
 }
 
 function addDropdownSearch(menu, searchInputClass, optionSelector) {
+  // Clear existing menu content
   menu.innerHTML = "";
+
+  // Check if search input exists already, if not, create and insert it
   if (!menu.querySelector(`.${searchInputClass}`)) {
     let searchInput = document.createElement("input");
     searchInput.type = "text";
     searchInput.className = searchInputClass;
     searchInput.placeholder = "Search...";
+
+    // Prevent dropdown closing when clicking on the search box
     searchInput.addEventListener("click", e => e.stopPropagation());
+
+    // Handle keyup event for searching options
     searchInput.addEventListener("keyup", function () {
       let filter = searchInput.value.toLowerCase();
       menu.querySelectorAll(optionSelector).forEach(opt => {
-        opt.style.display = opt.textContent.toLowerCase().includes(filter) // toLowerCase().indexOf(filter) > -1 ? "" : "none";
-          ? ""
-          : "none";
+        const text = opt.textContent.toLowerCase();
+        opt.style.display = text.includes(filter) ? "block" : "none";
       });
     });
+
+    // Insert the search input as the first element in the dropdown
     menu.insertBefore(searchInput, menu.firstChild);
+
+    // Focus event to handle dropdown visibility
+    searchInput.addEventListener("focus", function () {
+      menu.style.display = "block"; // Make sure dropdown remains open when focused
+    });
+
+    // Blur event to handle closing the dropdown if clicked outside
+    searchInput.addEventListener("blur", function () {
+      setTimeout(function () {
+        menu.style.display = "none"; // Close the dropdown after a small delay, giving time to click an option
+      }, 100); // Delay to allow option selection before the menu hides
+    });
   }
 }
 

@@ -20,59 +20,41 @@ let plotYState = {};
 let transWhereState = {};
 
 // ============================================================
-// Utility Functions for Dropdowns and WHERE Rows
+// Utility Functions
 // ============================================================
-function updateTableDropdown() {
+
+function updateTableMenu() {  
   let tableMenu = document.getElementById("tableDropdownMenu");
-
-  // Add search functionality to the dropdown
-  addDropdownSearch(tableMenu, "dropdown-search", ".table-option");
-
-  // Populate dropdown
+  addDropdownSearch(tableMenu, "dropdown-search", "table-option");
+  addClearOption(tableMenu, "table-option", "tableQueryButton");
   populateDropdown(tableMenu, measurementsData, "table-option", "tableQueryButton");
 }
 
-function updateTransformDropdowns(plotBoxId) {
+function updateDropdownMenu(menuID, buttonID, searchClass, optionClass, options) {
+  let menu = document.getElementById(menuID);
+  addDropdownSearch(menu, searchClass, optionClass);
+  addClearOption(menu, optionClass, buttonID);
+  populateDropdown(menu, options, optionClass, buttonID);
+}
+
+function updateDropdownMenuMulti(menuID, buttonID, searchClass, optionClass, options) {
+  let menu = document.getElementById(menuID);
+  addDropdownSearch(menu, searchClass, optionClass);
+  addClearOption(menu, optionClass, buttonID);
+  populateDropdownMulti(menu, options, optionClass, buttonID);
+}
+
+function updateTransformDropdowns(plotBoxId) { 
   let cols = getParentColumns(plotBoxId);
-
-  // Select dropdown search
-  let selectMenu = document.getElementById("selectDropdownMenu");
-  addDropdownSearch(selectMenu, "dropdown-search", ".select-option");
-
-  // Add a "Clear" option
-  addClearOption(selectMenu, ".select-option", "selectButton");
-
-  // Populate SELECT dropdown with columns
-  populateDropdownMulti(selectMenu, cols, "select-option", "selectButton");
-  
-  // Where dropdown search
-  let whereMenu = document.getElementById("whereDropdownMenu");
-  addDropdownSearch(whereMenu, "dropdown-search", ".where-option");
-
-  // Add a "Clear" option
-  addClearOption(whereMenu, ".where-option", "whereButton");
-
-  // Populate WHERE dropdown with columns
-  populateDropdown(whereMenu, cols, "where-option", "whereButton");
-
-  // Update SQL
+  updateDropdownMenuMulti("selectDropdownMenu", "selectButton", "dropdown-search", ".select-option", cols);
+  updateDropdownMenu("whereDropdownMenu", "whereButton", "dropdown-search", ".where-option", cols);
   updateSQLFromBasic();
 }
 
 function updatePlotDropdowns(plotBoxId) {
   let cols = getParentColumns(plotBoxId);
-  if (cols) {
-    // Create X button search
-    let xSelectMenu = document.getElementById("xSelectDropdownMenu");
-    addDropdownSearch(xSelectMenu, "dropdown-search", ".plot-option");
-    // Populate X dropdown
-    populateDropdown(xSelectMenu, cols, "plot-option", "xSelectButton");
-    // Create Y button search
-    let ySelectMenu = document.getElementById("ySelectDropdownMenu");
-    addDropdownSearch(ySelectMenu, "dropdown-search", ".plot-option");
-    // Populate Y dropdown
-    populateDropdown(ySelectMenu, cols, "plot-option", "ySelectButton");
-  }
+  updateDropdownMenu("xSelectDropdownMenu", "xSelectButton", "dropdown-search", ".plot-option", cols);
+  updateDropdownMenu("ySelectDropdownMenu_1", "ySelectButton_1", "dropdown-search", ".plot-option", cols);
 }
 
 function updateJoinDropdowns(joinBoxId) {
@@ -101,8 +83,9 @@ function updateJoinDropdowns(joinBoxId) {
 }
 
 // ============================================================
-// Box Management Functions
+// Box Creation
 // ============================================================
+
 function createBox(title, type, parentId = null, configState = null) {
   const whiteboard = document.getElementById("whiteboard");
   const box = document.createElement("div");
@@ -150,21 +133,21 @@ function createBox(title, type, parentId = null, configState = null) {
       } else {
         boxState[box.id].parent = box.id;
       }
-      buttonsHTML = `<button class="transform-btn" title="Create SQL Transform" style="position:absolute; top:5px; right:5px;">
+      buttonsHTML = `<button class="transform-btn" title="Create SQL Transform">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#ffffff" viewBox="0 0 24 24">
             <rect x="4" y="6" width="16" height="2"/>
             <rect x="4" y="11" width="16" height="2"/>
             <rect x="4" y="16" width="16" height="2"/>
           </svg>
         </button>
-        <button class="plot-btn" title="Create Plot" style="position:absolute; bottom:5px; right:5px;">
+        <button class="plot-btn" title="Create Plot">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#ffffff" viewBox="0 0 24 24">
             <line x1="4" y1="20" x2="20" y2="20" stroke="#ffffff" stroke-width="2"/>
             <line x1="4" y1="20" x2="4" y2="4" stroke="#ffffff" stroke-width="2"/>
             <polyline points="6,20 8,12 12,16 16,8 20,8" fill="none" stroke="#ffffff" stroke-width="1.5"/>
           </svg>
         </button>
-        <button class="minus-btn" title="Delete Box" style="position:absolute; bottom:5px; left:5px;">
+        <button class="minus-btn" title="Delete Box">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#ffffff" viewBox="0 0 24 24">
             <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
           </svg>
@@ -327,7 +310,8 @@ function createBox(title, type, parentId = null, configState = null) {
       e.stopPropagation();
       let newBox = createBox("Query", "table", box.id);
       connectBoxes(box, newBox);
-      updateTableDropdown();
+      // updateDropdownMenu("tableDropdownMenu", "tableQueryButton", "dropdown-search", "table-option", measurementsData);
+      updateTableMenu();
     });
   }
   let transformButton = box.querySelector(".transform-btn");
@@ -388,8 +372,9 @@ function createBox(title, type, parentId = null, configState = null) {
 }
 
 // ============================================================
-// Box Selection and Editor Display
+// Box Selection
 // ============================================================
+
 function selectBox(box) {
   boxes.forEach(b => b.classList.remove("selected"));
   box.classList.add("selected");
@@ -414,7 +399,8 @@ function selectBox(box) {
       break;
     case "table":
       panels.queryForm.style.display = "block";
-      updateTableDropdown();
+      // updateDropdownMenu("tableDropdownMenu", "tableQueryButton", "dropdown-search", "table-option", measurementsData);
+      updateTableMenu();
       document.getElementById("startTime").value = state.start_time || "2024-07-25T16:47:00Z";
       document.getElementById("endTime").value = state.end_time || "2024-07-25T16:47:10Z";
       break;
@@ -459,8 +445,9 @@ function selectBox(box) {
 }
 
 // -------------------------------------------------------------------
-// Additional WHERE Row – with higher z-index for dropdowns
+// Additional WHERE Row Function
 // -------------------------------------------------------------------
+
 function addWhereRow(operatorLabel, e) {
   if (e) e.preventDefault();
   const currentCount = transWhereState[selectedBox.id] || 0;
@@ -476,13 +463,13 @@ function addWhereRow(operatorLabel, e) {
       <button id="whereButton_${index}" class="where-button" aria-haspopup="true" aria-expanded="false">
         <span id="whereDisplay_${index}">Select columns</span>
       </button>
-      <div id="whereDropdownMenu_${index}" class="where-dropdown-menu" style="display:none; z-index:3000;"></div>
+      <div id="whereDropdownMenu_${index}" class="where-dropdown-menu"></div>
     </div>
     <div class="custom-dropdown operator-dropdown">
       <button id="operatorButton_${index}" class="operator-button" aria-haspopup="true" aria-expanded="false">
         <span id="operatorDisplay_${index}">=</span>
       </button>
-      <div class="operator-dropdown-menu" style="display:none;">
+      <div class="operator-dropdown-menu">
         <div class="operator-option" data-value="=">
           <div class="operator-name">=</div>
         </div>
@@ -495,40 +482,48 @@ function addWhereRow(operatorLabel, e) {
       </div>
     </div>
     <input type="text" class="whereValue" id="whereValue_${index}" placeholder='e.g. BAT1'>
-    <button class="removeWhereBtn" title="Remove condition">
+    <button class="remove-where-btn" title="Remove condition">
       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#ffffff" viewBox="0 0 24 24">
         <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
       </svg>
     </button>
   `;
+
+  // Attach event listeners
   groupDiv.querySelectorAll(".whereValue, .where-button, .operator-button, .where-operator-label").forEach(el => {
     el.addEventListener("change", updateSQLFromBasic);
     el.addEventListener("input", updateSQLFromBasic);
     el.addEventListener("click", updateSQLFromBasic);
   });
-  
+
   container.appendChild(groupDiv);
-  
+
+  // Selecting elements with IDs correctly using #
   const extraWhereButton = groupDiv.querySelector(`#whereButton_${index}`);
-  extraWhereButton.addEventListener("click", function(e) {
+  extraWhereButton.addEventListener("click", function (e) {
     e.stopPropagation();
     const dropdown = groupDiv.querySelector(`#whereDropdownMenu_${index}`);
     dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
   });
-  
-  // FIX: Define operatorBtn before use.
+
+  // Close dropdown when clicking elsewhere
+  document.addEventListener("click", function () {
+    document.getElementById(`whereDropdownMenu_${newIndex}`).style.display = "none";
+  });
+
+  // Define operatorBtn before using it
   const operatorBtn = groupDiv.querySelector(`#operatorButton_${index}`);
-  operatorBtn.addEventListener("click", function(e) {
+  operatorBtn.addEventListener("click", function (e) {
     e.stopPropagation();
     const dropdownMenu = groupDiv.querySelector(".operator-dropdown-menu");
     const isExpanded = operatorBtn.getAttribute("aria-expanded") === "true";
     dropdownMenu.style.display = isExpanded ? "none" : "block";
     operatorBtn.setAttribute("aria-expanded", isExpanded ? "false" : "true");
-    updateSQLFromBasic();  // Force immediate update
+    updateSQLFromBasic();
   });
-  
-  groupDiv.querySelectorAll(".operator-option").forEach(function(option) {
-    option.addEventListener("click", function() {
+
+  groupDiv.querySelectorAll(".operator-option").forEach(function (option) {
+    option.addEventListener("click", function () {
       const text = option.querySelector(".operator-name").textContent;
       groupDiv.querySelector(`#operatorDisplay_${index}`).textContent = text;
       groupDiv.querySelector(".operator-dropdown-menu").style.display = "none";
@@ -536,52 +531,98 @@ function addWhereRow(operatorLabel, e) {
       updateSQLFromBasic();
     });
   });
-  
-  groupDiv.querySelector(".removeWhereBtn").addEventListener("click", function(e) {
+
+  groupDiv.querySelector(".remove-where-btn").addEventListener("click", function (e) {
     e.preventDefault();
     container.removeChild(groupDiv);
     updateSQLFromBasic();
   });
-  
-  const parentId = boxState[selectedBox.id].parent;
-  let parentState = parentId ? boxState[parentId] : null;
-  if (parentState && parentState.data && parentState.data.length > 0) {
-    let cols = Object.keys(parentState.data[0]);
-    const whereDropdown = groupDiv.querySelector(`#whereDropdownMenu_${index}`);
-    whereDropdown.innerHTML = "";
-    let clearOpt = document.createElement("div");
-    clearOpt.className = "where-option";
-    clearOpt.textContent = "Clear";
-    clearOpt.dataset.value = "";
-    clearOpt.addEventListener("click", function() {
-      let btn = groupDiv.querySelector(`#whereButton_${index}`);
-      btn.dataset.selected = "";
-      btn.querySelector("span").textContent = "Select columns";
-      whereDropdown.style.display = "none";
-      updateSQLFromBasic();
-    });
-    whereDropdown.appendChild(clearOpt);
-    
-    cols.forEach(col => {
-      let opt = document.createElement("div");
-      opt.className = "where-option";
-      opt.textContent = col;
-      opt.dataset.value = col;
-      opt.addEventListener("click", function () {
-        let btn = groupDiv.querySelector(`#whereButton_${index}`);
-        btn.dataset.selected = col;
-        btn.querySelector("span").textContent = col;
-        whereDropdown.style.display = "none";
-        updateSQLFromBasic();
-      });
-      whereDropdown.appendChild(opt);
-    });
-  }
+
+  // Additional where dropdown search
+  let additWhereMenu = document.getElementById(`whereDropdownMenu_${index}`);
+  addDropdownSearch(additWhereMenu, "dropdown-search", ".where-option");
+
+  // Add a "Clear" option
+  addClearOption(additWhereMenu, ".where-option", `whereButton_${index}`);
+
+  // Populate WHERE dropdown with columns
+  let cols = getParentColumns(selectedBox.id);
+  populateDropdown(additWhereMenu, cols, "where-option", `whereButton_${index}`);
+
+  // Update SQL
+  updateSQLFromBasic();
 }
 
+// -------------------------------------------------------------------
+// Additional Y Values Row Function
+// -------------------------------------------------------------------
+
+function addYRow(e) {
+  if (e) e.preventDefault();
+  
+  plotYState[selectedBox.id] = (plotYState[selectedBox.id] || 1) + 1;
+  const yContainer = document.getElementById("ySelectContainer");
+  const yValuesWrapper = yContainer.querySelector(".y-values-wrapper"); // Find the wrapper where the Y groups go
+  let newIndex = document.querySelectorAll("#ySelectContainer .y-select-group").length + 1;
+
+  // Create new Y-value group
+  const groupDiv = document.createElement("div");
+  groupDiv.className = "form-group y-select-group"; // inline-block
+  groupDiv.innerHTML = `
+    <label for="ySelectDisplay_${newIndex}">Y Values:</label>
+    <div class="plot-row">
+      <div class="custom-dropdown plot-dropdown">
+        <button id="ySelectButton_${newIndex}" aria-haspopup="true" aria-expanded="false">
+          <span id="ySelectDisplay_${newIndex}">Select a column</span>
+        </button>
+        <div class="plot-dropdown-menu" id="ySelectDropdownMenu_${newIndex}"></div>
+      </div>
+      <button class="remove-y-btn" title="Remove Y Value">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#ffffff" viewBox="0 0 24 24">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </svg>
+      </button>
+    </div>`;
+
+  // Insert new group into the y-values-wrapper
+  yValuesWrapper.appendChild(groupDiv); // This inserts inside the wrapper, not ySelectContainer
+  
+  updatePlotDropdowns(selectedBox.id);
+
+  // Selecting elements
+  const extraYButton = groupDiv.querySelector(`#ySelectButton_${newIndex}`);
+  extraYButton.addEventListener("click", function (e) {
+    e.stopPropagation();
+    const menu = groupDiv.querySelector(`#ySelectDropdownMenu_${newIndex}`);
+    menu.style.display = menu.style.display === "block" ? "none" : "block";
+  });
+
+  // Close dropdown when clicking elsewhere
+  document.addEventListener("click", function () {
+    document.getElementById(`ySelectDropdownMenu_${newIndex}`).style.display = "none";
+  });
+
+  groupDiv.querySelector(".remove-y-btn").addEventListener("click", function(e) {
+    e.preventDefault();
+    yValuesWrapper.removeChild(groupDiv); // Remove from y-values-wrapper
+  });
+
+  // Additional where dropdown search
+  let menu = document.getElementById(`ySelectDropdownMenu_${newIndex}`);
+  addDropdownSearch(menu, "dropdown-search", ".where-option");
+
+  // Add a "Clear" option
+  addClearOption(menu, ".plot-option", `ySelectButton_${newIndex}`);
+
+  // Populate WHERE dropdown with columns
+  let cols = getParentColumns(selectedBox.id);
+  populateDropdown(menu, cols, "plot-option", `ySelectButton_${newIndex}`);
+};
+
 // ============================================================
-// runQuery and Related Functions
+// runQuery Function
 // ============================================================
+
 function runQuery() {
   if (!selectedBox) {
     alert("Select a box first.");
@@ -595,7 +636,8 @@ function runQuery() {
       .then(response => response.json())
       .then(data => {
         measurementsData = data.measurements || [];
-        updateTableDropdown();
+        // updateDropdownMenu("tableDropdownMenu", "tableQueryButton", "dropdown-search", "table-option", measurementsData);
+        updateTableMenu();
         let resultArray = measurementsData.map(m => ({ "InfluxDB Tables": m }));
         resultArray._columns = Object.keys(resultArray[0] || {});
         displayTable(resultArray);
@@ -839,196 +881,6 @@ function runQuery() {
 }
 
 // ============================================================
-// Additional Functions – Box Selection, WHERE Rows, etc.
-// ============================================================
-
-function selectBox(box) {
-  boxes.forEach(b => b.classList.remove("selected"));
-  box.classList.add("selected");
-  selectedBox = box;
-  const title = box.querySelector(".box-title").textContent;
-  document.getElementById("navigatorHeader").textContent = "Navigator: " + title;
-  const state = boxState[box.id];
-
-  const panels = {
-    codeEditorText: document.getElementById("codeEditorText"),
-    queryForm: document.getElementById("queryForm"),
-    sqlEditor: document.getElementById("sqlEditor"),
-    plotForm: document.getElementById("plotForm"),
-    joinForm: document.getElementById("joinForm")
-  };
-  for (let key in panels) { panels[key].style.display = "none"; }
-
-  switch (box.dataset.type) {
-    case "influx":
-      panels.codeEditorText.style.display = "block";
-      panels.codeEditorText.value = state.code || "Run to show available tables";
-      break;
-    case "table":
-      panels.queryForm.style.display = "block";
-      updateTableDropdown();
-      document.getElementById("startTime").value = state.start_time || "2024-07-25T16:47:00Z";
-      document.getElementById("endTime").value = state.end_time || "2024-07-25T16:47:10Z";
-      break;
-    case "sql":
-      panels.sqlEditor.style.display = "block";
-      updateTransformDropdowns(boxState[selectedBox.id].parent);
-      if (!state.sqlMode) { state.sqlMode = "basic"; }
-      if (state.sqlMode === "basic") {
-        document.getElementById("sqlBasicEditor").style.display = "block";
-        document.getElementById("sqlAdvancedEditor").style.display = "none";
-        document.getElementById("toggleAdvanced").textContent = "Advanced";
-        updateSQLFromBasic();
-      } else {
-        document.getElementById("sqlBasicEditor").style.display = "none";
-        document.getElementById("sqlAdvancedEditor").style.display = "block";
-        document.getElementById("toggleAdvanced").textContent = "Basic";
-        sqlEditorCM.setValue(state.advancedSQL || "SELECT * FROM df");
-      }
-      break;
-    case "plot":
-      panels.plotForm.style.display = "block";
-      updatePlotDropdowns(boxState[selectedBox.id].parent);
-      let parentState = boxState[state.parent];
-      state.yFields = state.yFields || [];
-      document.getElementById("tableContainer").innerHTML = "";
-      if (state.chartConfig) { renderChart(state.chartConfig); }
-      break;
-    case "join":
-      panels.joinForm.style.display = "block";
-      updateJoinDropdowns(selectedBox.id);
-      document.getElementById("joinTypeDisplay").textContent = state.joinType || "Inner";
-      break;
-    default:
-      console.warn("Unknown box type:", box.dataset.type);
-  }
-
-  if (box.dataset.type !== "plot") {
-    document.getElementById("tableContainer").innerHTML = state.result || "";
-  }
-  document.getElementById("tableHeader").textContent =
-    state.header || ("Results: " + box.querySelector(".box-title").textContent);
-}
-
-function addWhereRow(operatorLabel, e) {
-  if (e) e.preventDefault();
-  const currentCount = transWhereState[selectedBox.id] || 0;
-  const newCount = currentCount + 1;
-  transWhereState[selectedBox.id] = newCount;
-  const index = newCount;
-  const container = document.getElementById("additionalWhereContainer");
-  const groupDiv = document.createElement("div");
-  groupDiv.className = "sql-row where-condition";
-  groupDiv.innerHTML = `
-    <label class="where-operator-label">${operatorLabel}</label>
-    <div class="custom-dropdown where-dropdown">
-      <button id="whereButton_${index}" class="where-button" aria-haspopup="true" aria-expanded="false">
-        <span id="whereDisplay_${index}">Select columns</span>
-      </button>
-      <div id="whereDropdownMenu_${index}" class="where-dropdown-menu" style="display:none; z-index:3000;"></div>
-    </div>
-    <div class="custom-dropdown operator-dropdown">
-      <button id="operatorButton_${index}" class="operator-button" aria-haspopup="true" aria-expanded="false">
-        <span id="operatorDisplay_${index}">=</span>
-      </button>
-      <div class="operator-dropdown-menu" style="display:none;">
-        <div class="operator-option" data-value="=">
-          <div class="operator-name">=</div>
-        </div>
-        <div class="operator-option" data-value="<">
-          <div class="operator-name">&lt;</div>
-        </div>
-        <div class="operator-option" data-value=">">
-          <div class="operator-name">&gt;</div>
-        </div>
-      </div>
-    </div>
-    <input type="text" class="whereValue" id="whereValue_${index}" placeholder='e.g. BAT1'>
-    <button class="removeWhereBtn" title="Remove condition">
-      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#ffffff" viewBox="0 0 24 24">
-        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-      </svg>
-    </button>
-  `;
-  groupDiv.querySelectorAll(".whereValue, .where-button, .operator-button, .where-operator-label").forEach(el => {
-    el.addEventListener("change", updateSQLFromBasic);
-    el.addEventListener("input", updateSQLFromBasic);
-    el.addEventListener("click", updateSQLFromBasic);
-  });
-
-  container.appendChild(groupDiv);
-
-  const extraWhereButton = groupDiv.querySelector(`#whereButton_${index}`);
-  extraWhereButton.addEventListener("click", function(e) {
-    e.stopPropagation();
-    const dropdown = groupDiv.querySelector(`#whereDropdownMenu_${index}`);
-    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
-  });
-
-  // Fix: define operatorBtn before using it
-  const operatorBtn = groupDiv.querySelector(`#operatorButton_${index}`);
-  operatorBtn.addEventListener("click", function(e) {
-    e.stopPropagation();
-    const dropdownMenu = groupDiv.querySelector(".operator-dropdown-menu");
-    const isExpanded = operatorBtn.getAttribute("aria-expanded") === "true";
-    dropdownMenu.style.display = isExpanded ? "none" : "block";
-    operatorBtn.setAttribute("aria-expanded", isExpanded ? "false" : "true");
-    updateSQLFromBasic();  // Force immediate update
-  });
-
-  groupDiv.querySelectorAll(".operator-option").forEach(function(option) {
-    option.addEventListener("click", function() {
-      const text = option.querySelector(".operator-name").textContent;
-      groupDiv.querySelector(`#operatorDisplay_${index}`).textContent = text;
-      groupDiv.querySelector(".operator-dropdown-menu").style.display = "none";
-      operatorBtn.setAttribute("aria-expanded", "false");
-      updateSQLFromBasic();
-    });
-  });
-
-  groupDiv.querySelector(".removeWhereBtn").addEventListener("click", function(e) {
-    e.preventDefault();
-    container.removeChild(groupDiv);
-    updateSQLFromBasic();
-  });
-
-  const parentId = boxState[selectedBox.id].parent;
-  let parentState = parentId ? boxState[parentId] : null;
-  if (parentState && parentState.data && parentState.data.length > 0) {
-    let cols = Object.keys(parentState.data[0]);
-    const whereDropdown = groupDiv.querySelector(`#whereDropdownMenu_${index}`);
-    whereDropdown.innerHTML = "";
-    let clearOpt = document.createElement("div");
-    clearOpt.className = "where-option";
-    clearOpt.textContent = "Clear";
-    clearOpt.dataset.value = "";
-    clearOpt.addEventListener("click", function() {
-      let btn = groupDiv.querySelector(`#whereButton_${index}`);
-      btn.dataset.selected = "";
-      btn.querySelector("span").textContent = "Select columns";
-      whereDropdown.style.display = "none";
-      updateSQLFromBasic();
-    });
-    whereDropdown.appendChild(clearOpt);
-
-    cols.forEach(col => {
-      let opt = document.createElement("div");
-      opt.className = "where-option";
-      opt.textContent = col;
-      opt.dataset.value = col;
-      opt.addEventListener("click", function () {
-        let btn = groupDiv.querySelector(`#whereButton_${index}`);
-        btn.dataset.selected = col;
-        btn.querySelector("span").textContent = col;
-        whereDropdown.style.display = "none";
-        updateSQLFromBasic();
-      });
-      whereDropdown.appendChild(opt);
-    });
-  }
-}
-
-// ============================================================
 // Initialization and Event Listeners
 // ============================================================
 
@@ -1159,48 +1011,10 @@ document.addEventListener("DOMContentLoaded", () => {
     addWhereRow("OR", e);
   });
 
-  // Y values plus button.
+  // Add Y Values button.
   document.getElementById("addYBtn").addEventListener("click", function(e) {
     e.preventDefault();
-    plotYState[selectedBox.id] = (plotYState[selectedBox.id] || 1) + 1;
-    const yContainer = document.getElementById("ySelectContainer");
-    let newIndex = document.querySelectorAll("#ySelectContainer .y-select-group").length + 1;
-    const groupDiv = document.createElement("div");
-    groupDiv.className = "form-group y-select-group";
-    groupDiv.innerHTML = `<label for="ySelectDisplay_${newIndex}">Y Values:</label>
-                          <div class="custom-dropdown plot-dropdown">
-                            <button id="ySelectButton_${newIndex}" aria-haspopup="true" aria-expanded="false">
-                              <span id="ySelectDisplay_${newIndex}">Select a column</span>
-                            </button>
-                            <div class="plot-dropdown-menu" id="ySelectDropdownMenu_${newIndex}">
-                            </div>
-                          </div>`;
-    const addBtn = document.getElementById("addYBtn");
-    yContainer.insertBefore(groupDiv, addBtn);
-    updatePlotDropdowns(selectedBox.id);
-    document.getElementById(`ySelectButton_${newIndex}`).addEventListener("click", function(e) {
-      e.stopPropagation();
-      const menu = document.getElementById(`ySelectDropdownMenu_${newIndex}`);
-      menu.style.display = menu.style.display === "block" ? "none" : "block";
-    });
-    document.addEventListener("click", function() {
-      document.getElementById(`ySelectDropdownMenu_${newIndex}`).style.display = "none";
-    });
-
-    // Add a remove Y Value button
-    if (newIndex > 1) {
-      const removeBtn = document.createElement("button");
-      removeBtn.className = "remove-y-btn";
-      removeBtn.title = "Remove Y Value";
-      removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#ffffff" viewBox="0 0 24 24">
-      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-      </svg>`;
-      removeBtn.addEventListener("click", function(e) {
-        e.stopPropagation();
-        groupDiv.remove();
-      });
-      groupDiv.appendChild(removeBtn);
-    }
+    addYRow(e);
   });
 
   // Initialize CodeMirror for Advanced SQL editor.
