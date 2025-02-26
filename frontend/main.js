@@ -508,7 +508,7 @@ function addWhereRow(operatorLabel, e) {
 
   // Close dropdown when clicking elsewhere
   document.addEventListener("click", function () {
-    document.getElementById(`whereDropdownMenu_${newIndex}`).style.display = "none";
+    document.getElementById(`whereDropdownMenu_${index}`).style.display = "none";
   });
 
   // Define operatorBtn before using it
@@ -585,7 +585,7 @@ function addYRow(e) {
     </div>`;
 
   // Insert new group into the y-values-wrapper
-  yValuesWrapper.appendChild(groupDiv); // This inserts inside the wrapper, not ySelectContainer
+  yValuesWrapper.appendChild(groupDiv);
   
   updatePlotDropdowns(selectedBox.id);
 
@@ -696,7 +696,7 @@ function runQuery() {
       let baseColumn = document.getElementById("whereDisplay").textContent.trim();
       let opText = document.getElementById("operatorDisplay").textContent.trim();
       // Adjust operator mapping to accept both words and symbol values
-      const opMap = { "=": "=", "<": "<", ">": ">"};
+      const opMap = { "=": "=", "<": "<", ">": ">"}; 
       let baseOperator = opMap[opText] || "=";
       let baseValue = document.getElementById("whereValue").value.trim();
       if (baseColumn && baseColumn !== "Select columns" && baseValue) {
