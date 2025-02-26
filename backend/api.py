@@ -105,10 +105,18 @@ async def sql_join_endpoint(params: SQLJoinParams):
     try:
         df_left = pd.DataFrame(params.left_data)
         df_right = pd.DataFrame(params.right_data)
+
+        # Perform the join
         result_df = pd.merge(df_left, df_right, left_on=params.left_join_column,
                              right_on=params.right_join_column, how=params.join_type)
+
+        # Replace NaN values with the string "NAN"
+        result_df = result_df.fillna("NaN")
+
+        # Convert to JSON-serializable format
         dict_data = [OrderedDict((col, row[col]) for col in result_df.columns)
                      for _, row in result_df.iterrows()]
+
         return {"data": dict_data, "columns": list(result_df.columns)}
     except Exception as e:
         logger.error(f"Error in SQL join: {e}")

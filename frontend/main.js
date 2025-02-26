@@ -23,12 +23,12 @@ let transWhereState = {};
 // Utility Functions
 // ============================================================
 
-function updateTableMenu() {  
-  let tableMenu = document.getElementById("tableDropdownMenu");
-  addDropdownSearch(tableMenu, "dropdown-search", "table-option");
-  addClearOption(tableMenu, "table-option", "tableQueryButton");
-  populateDropdown(tableMenu, measurementsData, "table-option", "tableQueryButton");
-}
+// function updateTableMenu() {  
+//   let tableMenu = document.getElementById("tableDropdownMenu");
+//   addDropdownSearch(tableMenu, "dropdown-search", "table-option");
+//   addClearOption(tableMenu, "table-option", "tableQueryButton");
+//   populateDropdown(tableMenu, measurementsData, "table-option", "tableQueryButton");
+// }
 
 function updateDropdownMenu(menuID, buttonID, searchClass, optionClass, options) {
   let menu = document.getElementById(menuID);
@@ -46,15 +46,15 @@ function updateDropdownMenuMulti(menuID, buttonID, searchClass, optionClass, opt
 
 function updateTransformDropdowns(plotBoxId) { 
   let cols = getParentColumns(plotBoxId);
-  updateDropdownMenuMulti("selectDropdownMenu", "selectButton", "dropdown-search", ".select-option", cols);
-  updateDropdownMenu("whereDropdownMenu", "whereButton", "dropdown-search", ".where-option", cols);
+  updateDropdownMenuMulti("selectDropdownMenu", "selectButton", "dropdown-search", "select-option", cols);
+  updateDropdownMenu("whereDropdownMenu", "whereButton", "dropdown-search", "where-option", cols);
   updateSQLFromBasic();
 }
 
 function updatePlotDropdowns(plotBoxId) {
   let cols = getParentColumns(plotBoxId);
-  updateDropdownMenu("xSelectDropdownMenu", "xSelectButton", "dropdown-search", ".plot-option", cols);
-  updateDropdownMenu("ySelectDropdownMenu_1", "ySelectButton_1", "dropdown-search", ".plot-option", cols);
+  updateDropdownMenu("xSelectDropdownMenu", "xSelectButton", "dropdown-search", "plot-option", cols);
+  updateDropdownMenu("ySelectDropdownMenu_1", "ySelectButton_1", "dropdown-search", "plot-option", cols);
 }
 
 function updateJoinDropdowns(joinBoxId) {
@@ -63,7 +63,7 @@ function updateJoinDropdowns(joinBoxId) {
 
   // Left search
   let leftJoinMenu = document.getElementById("leftJoinDropdownMenu");
-  addDropdownSearch(leftJoinMenu, "dropdown-search", ".join-option");
+  addDropdownSearch(leftJoinMenu, "dropdown-search", "join-option");
   // Populate Left Join Column dropdown.
   let parentStateLeft = boxState[joinState.leftParent];
   if (parentStateLeft && parentStateLeft.data && parentStateLeft.data.length > 0) {
@@ -73,7 +73,7 @@ function updateJoinDropdowns(joinBoxId) {
 
   // Right search
   let rightJoinMenu = document.getElementById("rightJoinDropdownMenu");
-  addDropdownSearch(rightJoinMenu, "dropdown-search", ".join-option");
+  addDropdownSearch(rightJoinMenu, "dropdown-search", "join-option");
   // Populate Right Join Column dropdown.
   let parentStateRight = boxState[joinState.rightParent];
   if (parentStateRight && parentStateRight.data && parentStateRight.data.length > 0) {
@@ -126,7 +126,7 @@ function createBox(title, type, parentId = null, configState = null) {
       tableQueryCounter++;
       boxState[box.id].table = "batspk__4_2_0__ethernet__65400";
       boxState[box.id].start_time = "2024-07-25T16:47:00Z";
-      boxState[box.id].end_time = "2024-07-25T16:47:30Z";
+      boxState[box.id].end_time = "2024-07-25T16:47:10Z";
       boxState[box.id].header = `Results: Query ${tableQueryCounter - 1}`;
       if (parentId && document.getElementById(parentId).dataset.type !== "influx") {
         boxState[box.id].parent = parentId;
@@ -196,7 +196,7 @@ function createBox(title, type, parentId = null, configState = null) {
     case "join":
       boxTitle = title || "Join " + joinCounter;
       joinCounter++;
-      boxState[box.id].joinType = boxState[box.id].joinType || "Inner";
+      boxState[box.id].joinType = boxState[box.id].joinType || "Left Join";
       boxState[box.id].leftJoinColumn = boxState[box.id].leftJoinColumn || "";
       boxState[box.id].rightJoinColumn = boxState[box.id].rightJoinColumn || "";
       boxState[box.id].header = `Results: Join ${joinCounter - 1}`;
@@ -310,8 +310,7 @@ function createBox(title, type, parentId = null, configState = null) {
       e.stopPropagation();
       let newBox = createBox("Query", "table", box.id);
       connectBoxes(box, newBox);
-      // updateDropdownMenu("tableDropdownMenu", "tableQueryButton", "dropdown-search", "table-option", measurementsData);
-      updateTableMenu();
+      updateDropdownMenu("tableDropdownMenu", "tableQueryButton", "dropdown-search", "table-option", measurementsData);
     });
   }
   let transformButton = box.querySelector(".transform-btn");
@@ -399,8 +398,7 @@ function selectBox(box) {
       break;
     case "table":
       panels.queryForm.style.display = "block";
-      // updateDropdownMenu("tableDropdownMenu", "tableQueryButton", "dropdown-search", "table-option", measurementsData);
-      updateTableMenu();
+      updateDropdownMenu("tableDropdownMenu", "tableQueryButton", "dropdown-search", "table-option", measurementsData);
       document.getElementById("startTime").value = state.start_time || "2024-07-25T16:47:00Z";
       document.getElementById("endTime").value = state.end_time || "2024-07-25T16:47:10Z";
       break;
@@ -431,7 +429,7 @@ function selectBox(box) {
     case "join":
       panels.joinForm.style.display = "block";
       updateJoinDropdowns(selectedBox.id);
-      document.getElementById("joinTypeDisplay").textContent = state.joinType || "Inner";
+      document.getElementById("joinTypeDisplay").textContent = state.joinType || "Left Join";
       break;
     default:
       console.warn("Unknown box type:", box.dataset.type);
@@ -540,10 +538,10 @@ function addWhereRow(operatorLabel, e) {
 
   // Additional where dropdown search
   let additWhereMenu = document.getElementById(`whereDropdownMenu_${index}`);
-  addDropdownSearch(additWhereMenu, "dropdown-search", ".where-option");
+  addDropdownSearch(additWhereMenu, "dropdown-search", "where-option");
 
   // Add a "Clear" option
-  addClearOption(additWhereMenu, ".where-option", `whereButton_${index}`);
+  addClearOption(additWhereMenu, "where-option", `whereButton_${index}`);
 
   // Populate WHERE dropdown with columns
   let cols = getParentColumns(selectedBox.id);
@@ -552,10 +550,6 @@ function addWhereRow(operatorLabel, e) {
   // Update SQL
   updateSQLFromBasic();
 }
-
-// -------------------------------------------------------------------
-// Additional Y Values Row Function
-// -------------------------------------------------------------------
 
 function addYRow(e) {
   if (e) e.preventDefault();
@@ -609,15 +603,15 @@ function addYRow(e) {
 
   // Additional where dropdown search
   let menu = document.getElementById(`ySelectDropdownMenu_${newIndex}`);
-  addDropdownSearch(menu, "dropdown-search", ".where-option");
+  addDropdownSearch(menu, "dropdown-search", "plot-option");
 
   // Add a "Clear" option
-  addClearOption(menu, ".plot-option", `ySelectButton_${newIndex}`);
+  addClearOption(menu, "plot-option", `ySelectButton_${newIndex}`);
 
   // Populate WHERE dropdown with columns
   let cols = getParentColumns(selectedBox.id);
   populateDropdown(menu, cols, "plot-option", `ySelectButton_${newIndex}`);
-};
+}
 
 // ============================================================
 // runQuery Function
@@ -636,8 +630,7 @@ function runQuery() {
       .then(response => response.json())
       .then(data => {
         measurementsData = data.measurements || [];
-        // updateDropdownMenu("tableDropdownMenu", "tableQueryButton", "dropdown-search", "table-option", measurementsData);
-        updateTableMenu();
+        updateDropdownMenu("tableDropdownMenu", "tableQueryButton", "dropdown-search", "table-option", measurementsData);
         let resultArray = measurementsData.map(m => ({ "InfluxDB Tables": m }));
         resultArray._columns = Object.keys(resultArray[0] || {});
         displayTable(resultArray);
@@ -695,8 +688,7 @@ function runQuery() {
       let whereClause = "";
       let baseColumn = document.getElementById("whereDisplay").textContent.trim();
       let opText = document.getElementById("operatorDisplay").textContent.trim();
-      // Adjust operator mapping to accept both words and symbol values
-      const opMap = { "=": "=", "<": "<", ">": ">"}; 
+      const opMap = { "=": "=", "<": "<", ">": ">" }; 
       let baseOperator = opMap[opText] || "=";
       let baseValue = document.getElementById("whereValue").value.trim();
       if (baseColumn && baseColumn !== "Select columns" && baseValue) {
@@ -837,26 +829,42 @@ function runQuery() {
     document.getElementById("tableHeader").textContent = state.header;
     setRunButtonLoading(false);
   } else if (selectedBox.dataset.type === "join") {
-    let joinType = document.getElementById("joinTypeDisplay").textContent || "Inner";
+    let joinType = document.getElementById("joinTypeDisplay").textContent || "Left Join";
     let leftVal = document.getElementById("leftJoinColumnButton").dataset.selected || "";
     let rightVal = document.getElementById("rightJoinColumnButton").dataset.selected || "";
-    state.joinType = joinType;
+
+    // Mapping join types for API compatibility
+    const joinTypeMap = {
+        "Left Join": "left",
+        "Right Join": "right",
+        "Inner Join": "inner",
+        "Outer Join": "outer",
+        "Cross Join": "cross"
+    };
+
+    let formattedJoinType = joinTypeMap[joinType] || joinType; // Default to original if not found
+
+    state.joinType = formattedJoinType;
     state.leftJoinColumn = leftVal;
     state.rightJoinColumn = rightVal;
+
     let leftState = boxState[state.leftParent];
     let rightState = boxState[state.rightParent];
+
     if (!leftState || !leftState.data || !rightState || !rightState.data) {
-      alert("Both parent SQL transform boxes must have data to join.");
-      setRunButtonLoading(false);
-      return;
+        alert("Both parent SQL transform boxes must have data to join.");
+        setRunButtonLoading(false);
+        return;
     }
+
     let payload = {
-      left_data: leftState.data,
-      right_data: rightState.data,
-      left_join_column: leftVal,
-      right_join_column: rightVal,
-      join_type: joinType
+        left_data: leftState.data,
+        right_data: rightState.data,
+        left_join_column: leftVal,
+        right_join_column: rightVal,
+        join_type: formattedJoinType
     };
+
     fetch("http://127.0.0.1:8000/sql_join", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1053,5 +1061,20 @@ document.addEventListener("DOMContentLoaded", () => {
       el.addEventListener("input", updateSQLFromBasic);
       el.addEventListener("click", updateSQLFromBasic);
     }
+  });
+
+  // -------------------------------------------------------
+  // NEW: Add join type option listeners so selection updates the state
+  // -------------------------------------------------------
+  document.querySelectorAll("#joinTypeDropdownMenu .join-option").forEach(option => {
+    option.addEventListener("click", function(e) {
+      const selected = option.dataset.value;
+      const joinTypeDisplay = document.getElementById("joinTypeDisplay");
+      joinTypeDisplay.textContent = selected + " Join";
+      if (selectedBox && selectedBox.dataset.type === "join") {
+        boxState[selectedBox.id].joinType = selected;
+      }
+      document.getElementById("joinTypeDropdownMenu").style.display = "none";
+    });
   });
 });

@@ -23,7 +23,6 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0;
 }
 
-
 :root {
   --primary-color: #3d82cb;
   --primary-hover: #51d0a2;
@@ -42,7 +41,7 @@ h1, h2, h3, h4, h5, h6 {
   flex-direction: column;
   height: 100%;
   width: 100%;
-  overflow: hidden; /* change if issues arise */
+  overflow: hidden;
 }
 
 .custom-dropdown-btn {
@@ -70,8 +69,7 @@ h1, h2, h3, h4, h5, h6 {
   border-bottom: 1px solid var(--border-color);
   width: 100%;
   height: 50%;
-  /* overflow: hidden; */
-  overflow: hidden; /* change if issues arise */
+  overflow: hidden;
 }
 
 #canvasSVG {
@@ -216,6 +214,8 @@ h1, h2, h3, h4, h5, h6 {
 #additionalWhereContainer {
   max-height: 150px;
   overflow-y: auto;
+  /* Ensure dropdowns are not clipped */
+  overflow: visible;
 }
 
 /* Vertical divider */
@@ -338,6 +338,11 @@ select::placeholder {
   display: none;
 }
 
+/* Ensure additional where dropdown menus are on top */
+#additionalWhereContainer .where-dropdown-menu {
+  z-index: 5000;
+}
+
 .table-dropdown-menu .dropdown-search,
 .select-dropdown-menu .dropdown-search,
 .where-dropdown-menu .dropdown-search,
@@ -391,11 +396,11 @@ select::placeholder {
 
 .plot-row {
   display: inline-flex;
+  align-items: center; /* Center items vertically */
   padding: 5px;
 }
 
-
-/*---------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
    SQL Editor Row Layout
 ----------------------------------------------------------------------------*/
 .sql-row {
@@ -453,7 +458,7 @@ select::placeholder {
   border-color: hsl(0, 0%, 60%);
 }
 .box.selected {
-  border-color: hsl(237, 86%, 61%)
+  border-color: hsl(237, 86%, 61%);
 }
 .box.selected:hover {
   border-color: hsl(0, 0%, 60%);
@@ -550,6 +555,7 @@ select::placeholder {
   font-size: 12px;
   padding: 0;
   transition: background-color 0.2s ease;
+  margin-left: 5px;
 }
 
 .remove-y-btn svg {
@@ -657,4 +663,22 @@ select::placeholder {
   0% { transform: scale(1); }
   50% { transform: scale(1.1); }
   100% { transform: scale(1); }
+}
+
+/*---------------------------------------------------------------------------
+   Updated Dropdown and Y-Row Styles
+---------------------------------------------------------------------------*/
+.plot-row {
+  display: inline-flex;
+  align-items: center; /* Center items vertically */
+  padding: 5px;
+}
+
+.remove-y-btn {
+  margin-left: 5px; /* Add space between dropdown and remove button */
+}
+
+/* Ensure additional WHERE dropdown menus appear on top */
+#additionalWhereContainer .where-dropdown-menu {
+  z-index: 5000;
 }

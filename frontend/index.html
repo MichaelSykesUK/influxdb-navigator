@@ -109,7 +109,7 @@
               <!-- SQL Preview -->
               <div id="basicSQLPreview" class="basic-sql-preview"></div>
             </div>
-            <!-- ADvanced SQL Editor -->
+            <!-- Advanced SQL Editor -->
             <div id="sqlAdvancedEditor" style="display:none;">
               <div class="form-group">
                 <label for="sqlEditorText">Enter SQL statement below:</label>
@@ -161,23 +161,24 @@
               <label for="joinTypeDisplay">Join Type:</label>
               <div class="custom-dropdown join-dropdown">
                 <button id="joinTypeButton" aria-haspopup="true" aria-expanded="false">
-                  <span id="joinTypeDisplay">Inner Join</span>
+                  <span id="joinTypeDisplay">Left Join</span>
                 </button>
-                <div class="join-dropdown-menu">
-                  <div class="join-option" data-value="Inner">
-                    <div class="join-name">Inner Join</div>
-                  </div>
-                  <div class="join-option" data-value="Left">
+                <!-- Added id below -->
+                <div id="joinTypeDropdownMenu" class="join-dropdown-menu">
+                  <div class="join-option" data-value="Left Join">
                     <div class="join-name">Left Join</div>
                   </div>
-                  <div class="join-option" data-value="Right">
+                  <div class="join-option" data-value="Right Join">
                     <div class="join-name">Right Join</div>
                   </div>
-                  <div class="join-option" data-value="Outer">
+                  <div class="join-option" data-value="Inner Join">
+                    <div class="join-name">Inner Join</div>
+                  </div>
+                  <div class="join-option" data-value="Outer Join">
                     <div class="join-name">Outer Join</div>
                   </div>
-                  <div class="join-option" data-value="Full">
-                    <div class="join-name">Full Join</div>
+                  <div class="join-option" data-value="Cross Join">
+                    <div class="join-name">Cross Join</div>
                   </div>
                 </div>
               </div>

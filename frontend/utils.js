@@ -1,3 +1,14 @@
+// utils.js - InfluxDB Code Workbook Utility Functions
+// ============================================================
+// This file contains all utility functions for enabling inline renaming,
+// dragging boxes, connecting boxes via SVG lines, handling dropdown menus,
+// exporting CSV, rendering charts, saving/loading configuration, and more.
+// (Adapted from your original ~500-line file with dropdown search fixes)
+// ============================================================
+
+/*------------------------------------------------------------------------------
+   Inline Rename and Drag Functions
+------------------------------------------------------------------------------*/
 function enableInlineRename(box) {
   const titleDiv = box.querySelector(".box-title");
   const currentName = titleDiv.textContent;
@@ -17,14 +28,18 @@ function finishRename(box, newName) {
   newTitle.className = "box-title";
   newTitle.textContent = newName;
   box.querySelector("input").replaceWith(newTitle);
-  if (box === selectedBox) document.getElementById("navigatorHeader").textContent = "Navigator: " + newName;
+  if (box === selectedBox) {
+    document.getElementById("navigatorHeader").textContent = "Navigator: " + newName;
+  }
 }
 
 function makeDraggable(el) {
   let isDragging = false, offsetX = 0, offsetY = 0;
   el.addEventListener("mousedown", function(e) {
-    if (e.target.classList.contains("plot-btn") || e.target.classList.contains("minus-btn") ||
-        e.target.classList.contains("join-btn") || e.target.tagName === "INPUT") return;
+    if (e.target.classList.contains("plot-btn") ||
+        e.target.classList.contains("minus-btn") ||
+        e.target.classList.contains("join-btn") ||
+        e.target.tagName === "INPUT") return;
     isDragging = true;
     offsetX = e.clientX - el.offsetLeft;
     offsetY = e.clientY - el.offsetTop;
@@ -44,6 +59,9 @@ function makeDraggable(el) {
   });
 }
 
+/*------------------------------------------------------------------------------
+   Box Connector Functions
+------------------------------------------------------------------------------*/
 function connectBoxes(box1, box2, color = "#007acc") {
   const svg = document.getElementById("canvasSVG");
   const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -72,6 +90,9 @@ function updateConnectors() {
   });
 }
 
+/*------------------------------------------------------------------------------
+   Resizing Functions
+------------------------------------------------------------------------------*/
 function startResizeHorizontal(e) {
   e.preventDefault();
   let startY = e.clientY;
@@ -125,13 +146,17 @@ function startResizeVertical(e) {
   document.addEventListener("mouseup", stopDrag);
 }
 
+/*------------------------------------------------------------------------------
+   Button and Export Functions
+------------------------------------------------------------------------------*/
 function setRunButtonLoading(isLoading) {
   const runButton = document.getElementById("runButton");
   runButton.disabled = isLoading;
-  runButton.innerHTML = isLoading ? '<div class="spinner"></div>' :
-    `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#007acc" viewBox="0 0 24 24">
-      <path d="M8 5v14l11-7z"/>
-    </svg>`;
+  runButton.innerHTML = isLoading
+    ? '<div class="spinner"></div>'
+    : `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#007acc" viewBox="0 0 24 24">
+         <path d="M8 5v14l11-7z"/>
+       </svg>`;
 }
 
 function exportCSV() {
@@ -140,7 +165,9 @@ function exportCSV() {
   if (!state.data || state.data.length === 0) { alert("No data to export."); return; }
   const columns = state.data._columns || Object.keys(state.data[0]);
   let csv = [columns.map(key => `"${key.replace(/"/g, '""')}"`).join(",")];
-  state.data.forEach(row => { csv.push(columns.map(key => `"${String(row[key]).replace(/"/g, '""')}"`).join(",")); });
+  state.data.forEach(row => {
+    csv.push(columns.map(key => `"${String(row[key]).replace(/"/g, '""')}"`).join(","));
+  });
   const blob = new Blob([csv.join("\n")], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -173,9 +200,9 @@ function toggleMaximize() {
     rt.style.height = "100%";
     rt.style.zIndex = "10000";
     mtBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#007acc" viewBox="0 0 24 24">
-      <path d="M3 3h24v24H3V3z" fill="none"/>
-      <path d="M19 13H5v-2h14v2z"/>
-    </svg>`;
+                           <path d="M3 3h24v24H3V3z" fill="none"/>
+                           <path d="M19 13H5v-2h14v2z"/>
+                         </svg>`;
     mtBtn.title = "Minimize";
     whiteboard.style.display = "none";
   } else {
@@ -187,60 +214,66 @@ function toggleMaximize() {
     rt.style.height = "";
     rt.style.zIndex = "";
     mtBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#007acc" viewBox="0 0 24 24">
-      <path d="M3 3h18v18H3V3zm2 2v14h14V5H5z"/>
-    </svg>`;
+                           <path d="M3 3h18v18H3V3zm2 2v14h14V5H5z"/>
+                         </svg>`;
     mtBtn.title = "Maximize";
     delete rt.dataset.originalWidth;
     whiteboard.style.display = "block";
   }
 }
 
+/*------------------------------------------------------------------------------
+   Data and Dropdown Helpers
+------------------------------------------------------------------------------*/
 function getParentColumns(plotBoxId) {
   let plotBoxState = boxState[plotBoxId];
   if (!plotBoxState) return;
   let parentState = boxState[plotBoxState.parent];
-  if (parentState && parentState.data && parentState.data.length > 0) {    
+  if (parentState && parentState.data && parentState.data.length > 0) {
     return Object.keys(parentState.data[0]);
   }
   return [];
 }
 
-function addDropdownSearch(menu, searchInputClass, optionSelector) {
+/*------------------------------------------------------------------------------
+   Updated Dropdown Search Function
+   - Automatically prepends a dot to the option selector if missing.
+------------------------------------------------------------------------------*/
+function addDropdownSearch(menu, searchInputClass, optionClass) {
   // Clear existing menu content
   menu.innerHTML = "";
-
+  // Ensure the option selector is a proper CSS selector
+  let effectiveOptionSelector = optionClass;
+  if (effectiveOptionSelector[0] !== ".") {
+    effectiveOptionSelector = "." + effectiveOptionSelector;
+  }
   // Check if search input exists already, if not, create and insert it
   if (!menu.querySelector(`.${searchInputClass}`)) {
     let searchInput = document.createElement("input");
     searchInput.type = "text";
     searchInput.className = searchInputClass;
     searchInput.placeholder = "Search...";
-
     // Prevent dropdown closing when clicking on the search box
     searchInput.addEventListener("click", e => e.stopPropagation());
-
     // Handle keyup event for searching options
     searchInput.addEventListener("keyup", function () {
       let filter = searchInput.value.toLowerCase();
-      menu.querySelectorAll(optionSelector).forEach(opt => {
+      menu.querySelectorAll(effectiveOptionSelector).forEach(opt => {
         const text = opt.textContent.toLowerCase();
         opt.style.display = text.includes(filter) ? "block" : "none";
       });
     });
-
     // Insert the search input as the first element in the dropdown
     menu.insertBefore(searchInput, menu.firstChild);
-
     // Focus event to handle dropdown visibility
     searchInput.addEventListener("focus", function () {
-      menu.style.display = "block"; // Make sure dropdown remains open when focused
+      menu.style.display = "block";
     });
-
     // Blur event to handle closing the dropdown if clicked outside
     searchInput.addEventListener("blur", function () {
       setTimeout(function () {
-        menu.style.display = "none"; // Close the dropdown after a small delay, giving time to click an option
-      }, 100); // Delay to allow option selection before the menu hides
+        menu.style.display = "none";
+      }, 100);
     });
   }
 }
@@ -295,11 +328,14 @@ function addClearOption(menu, optionClass, button) {
   menu.appendChild(clearOpt);
 }
 
+/*------------------------------------------------------------------------------
+   Box Creation and Deletion
+------------------------------------------------------------------------------*/
 function createJoinBox(title, leftSQLBox, rightSQLBox) {
   const joinState = {
     leftParent: leftSQLBox.id,
     rightParent: rightSQLBox.id,
-    joinType: "Inner",
+    joinType: "Left Join",
     leftJoinColumn: "",
     rightJoinColumn: "",
     title: title
@@ -389,11 +425,9 @@ function displayTable(dataArray) {
   updateTableHeader(dataArray, note);
 }
 
-
-// ============================================================
-// Configuration Functions
-// ============================================================
-
+/*------------------------------------------------------------------------------
+   Configuration Save/Load Functions
+------------------------------------------------------------------------------*/
 function saveConfig() {
   const config = {
     boxes: boxes.map(box => {
@@ -473,18 +507,9 @@ function loadConfig(event) {
   event.target.value = "";
 }
 
-function setRunButtonLoading(isLoading) {
-  const runButton = document.getElementById("runButton");
-  runButton.disabled = isLoading;
-  if (isLoading) {
-    runButton.innerHTML = '<div class="spinner"></div>';
-  } else {
-    runButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#007acc" viewBox="0 0 24 24">
-      <path d="M8 5v14l11-7z"/>
-    </svg>`;
-  }
-}
-
+/*------------------------------------------------------------------------------
+   SQL Editor Helpers
+------------------------------------------------------------------------------*/
 function updateSQLFromBasic() { 
   if (!selectedBox || selectedBox.dataset.type !== "sql") { 
     return;
@@ -523,7 +548,6 @@ function updateSQLFromBasic() {
   } else {
     formattedSQL = "SELECT " + selectClause + " FROM df";
   }
-
   state.basicSQL = formattedSQL;
   const previewEl = document.getElementById("basicSQLPreview");
   let labelEl = document.getElementById("generatedSQLLabel");
