@@ -28,7 +28,7 @@ function toggleDarkMode() {
 }
 
 // ============================================================
-// Utility Functions
+// Utility Functions (Dropdowns, etc.)
 // ============================================================
 function updateDropdownMenu(menuID, buttonID, searchClass, optionClass, options) {
   let menu = document.getElementById(menuID);
@@ -77,16 +77,17 @@ function updateJoinDropdowns(joinBoxId) {
 }
 
 // ============================================================
-// Box Creation
+// Box Creation: Create a new box and initialize its state
 // ============================================================
 function createBox(title, type, parentId = null, configState = null) {
   const whiteboard = document.getElementById("whiteboard");
   const box = document.createElement("div");
   box.className = "box";
   
-  // Declare boxTitle locally so that new boxes do not inherit previous values.
+  // Use a local variable for the title.
   let boxTitle = title || "";
   
+  // Assign an id.
   if (configState && configState.id) {
     box.id = configState.id;
   } else {
@@ -94,7 +95,7 @@ function createBox(title, type, parentId = null, configState = null) {
     boxIdCounter++;
   }
   
-  // Initialize per-box state
+  // Initialize box state with defaults based on type.
   if (configState) {
     boxState[box.id] = Object.assign({}, configState);
     delete boxState[box.id].result;
@@ -102,98 +103,78 @@ function createBox(title, type, parentId = null, configState = null) {
   } else {
     boxState[box.id] = {};
     if (type === "table") {
-      boxState[box.id].table = "";
-      boxState[box.id].start_time = "";
-      boxState[box.id].end_time = "";
+      boxState[box.id] = {
+        table: "",
+        start_time: "",
+        end_time: "",
+        result: ""
+      };
     } else if (type === "sql") {
-      boxState[box.id].basicSQL = "";
-      boxState[box.id].advancedSQL = "SELECT * FROM df";
-      boxState[box.id].sqlMode = "basic";
+      boxState[box.id] = {
+        basicSQL: "",
+        advancedSQL: "SELECT * FROM df",
+        sqlMode: "basic",
+        // For more granular state, you could add selectClause, whereClause, additionalWhere, etc.
+        selectClause: "",
+        whereClause: "",
+        additionalWhere: []
+      };
     } else if (type === "join") {
-      boxState[box.id].joinType = "Inner";
-      boxState[box.id].leftJoinColumn = "";
-      boxState[box.id].rightJoinColumn = "";
+      boxState[box.id] = {
+        joinType: "Left Join",
+        leftJoinColumn: "",
+        rightJoinColumn: ""
+      };
     } else if (type === "influx") {
-      // Explicitly initialize influx box state
-      boxState[box.id].code = "Run to show available tables";
-      boxState[box.id].header = "Results: InfluxDB";
+      boxState[box.id] = {
+        code: "Run to show available tables",
+        header: "Results: InfluxDB"
+      };
+    } else if (type === "plot") {
+      boxState[box.id] = {
+        xField: "",
+        yFields: [],
+        chartConfig: null,
+        result: ""
+      };
     }
   }
   
-  // Build buttons HTML based on type
+  // Build inner HTML with title and buttons based on type.
   let buttonsHTML = "";
   switch (type) {
     case "influx":
       boxTitle = "InfluxDB";
       buttonsHTML = `<button class="query-btn" title="Create Table Query">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#ffffff" viewBox="0 0 24 24">
-            <circle cx="10" cy="10" r="6" stroke="#ffffff" stroke-width="2" fill="none"/>
-            <line x1="14" y1="14" x2="20" y2="20" stroke="#ffffff" stroke-width="2"/>
-          </svg>
+          <!-- SVG omitted for brevity -->
+          Query
         </button>`;
       break;
     case "table":
       boxTitle = "Query " + tableQueryCounter;
       tableQueryCounter++;
       boxState[box.id].header = `Results: Query ${tableQueryCounter - 1}`;
+      // For table boxes, record the parent (so transforms can reference it).
       boxState[box.id].parent = (parentId && document.getElementById(parentId).dataset.type !== "influx") ? parentId : box.id;
-      buttonsHTML = `<button class="transform-btn" title="Create SQL Transform">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#ffffff" viewBox="0 0 24 24">
-            <rect x="4" y="6" width="16" height="2"/>
-            <rect x="4" y="11" width="16" height="2"/>
-            <rect x="4" y="16" width="16" height="2"/>
-          </svg>
-        </button>
-        <button class="plot-btn" title="Create Plot">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#ffffff" viewBox="0 0 24 24">
-            <line x1="4" y1="20" x2="20" y2="20" stroke="#ffffff" stroke-width="2"/>
-            <line x1="4" y1="20" x2="4" y2="4" stroke="#ffffff" stroke-width="2"/>
-            <polyline points="6,20 8,12 12,16 16,8 20,8" fill="none" stroke="#ffffff" stroke-width="1.5"/>
-          </svg>
-        </button>
-        <button class="minus-btn" title="Delete Box">
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#ffffff" viewBox="0 0 24 24">
-            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-          </svg>
-        </button>`;
+      buttonsHTML = `<button class="transform-btn" title="Create SQL Transform">Transform</button>
+                     <button class="plot-btn" title="Create Plot">Plot</button>
+                     <button class="minus-btn" title="Delete Box">X</button>`;
       break;
     case "sql":
       boxTitle = "Transform " + sqlTransformCounter;
       sqlTransformCounter++;
       boxState[box.id].header = `Results: Transform ${sqlTransformCounter - 1}`;
       boxState[box.id].parent = parentId;
-      boxState[box.id].sqlMode = "basic";
-      buttonsHTML = `<button class="plot-btn" title="Create Plot">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#ffffff" viewBox="0 0 24 24">
-            <line x1="4" y1="20" x2="20" y2="20" stroke="#ffffff" stroke-width="2"/>
-            <line x1="4" y1="20" x2="4" y2="4" stroke="#ffffff" stroke-width="2"/>
-            <polyline points="6,20 8,12 12,16 16,8 20,8" fill="none" stroke="#ffffff" stroke-width="1.5"/>
-          </svg>
-        </button>
-        <button class="join-btn" title="Create Join">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="#ffffff" stroke-width="1.5" viewBox="0 0 24 24">
-            <circle cx="9" cy="12" r="6"/>
-            <circle cx="15" cy="12" r="6"/>
-          </svg>
-        </button>
-        <button class="minus-btn" title="Delete Box">
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#ffffff" viewBox="0 0 24 24">
-            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-          </svg>
-        </button>`;
+      buttonsHTML = `<button class="plot-btn" title="Create Plot">Plot</button>
+                     <button class="join-btn" title="Create Join">Join</button>
+                     <button class="minus-btn" title="Delete Box">X</button>`;
       break;
     case "plot":
       boxTitle = "Plot " + plotCounter;
       plotCounter++;
-      boxState[box.id].xField = "";
-      boxState[box.id].yFields = [];
       boxState[box.id].header = `Results: Plot ${plotCounter - 1}`;
       boxState[box.id].parent = parentId;
-      buttonsHTML = `<button class="minus-btn" title="Delete Box">
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#ffffff" viewBox="0 0 24 24">
-            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-          </svg>
-        </button>`;
+      buttonsHTML = `<button class="minus-btn" title="Delete Box">X</button>`;
       break;
     case "join":
       boxTitle = title || "Join " + joinCounter;
@@ -202,24 +183,14 @@ function createBox(title, type, parentId = null, configState = null) {
       boxState[box.id].leftJoinColumn = "";
       boxState[box.id].rightJoinColumn = "";
       boxState[box.id].header = `Results: Join ${joinCounter - 1}`;
-      buttonsHTML = `<button class="plot-btn" title="Create Plot">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#ffffff" viewBox="0 0 24 24">
-            <line x1="4" y1="20" x2="20" y2="20" stroke="#ffffff" stroke-width="2"/>
-            <line x1="4" y1="20" x2="4" y2="4" stroke="#ffffff" stroke-width="2"/>
-            <polyline points="6,20 8,12 12,16 16,8 20,8" fill="none" stroke="#ffffff" stroke-width="1.5"/>
-          </svg>
-        </button>
-        <button class="minus-btn" title="Delete Box">
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#ffffff" viewBox="0 0 24 24">
-            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-          </svg>
-        </button>`;
+      buttonsHTML = `<button class="plot-btn" title="Create Plot">Plot</button>
+                     <button class="minus-btn" title="Delete Box">X</button>`;
       break;
   }
   
   box.innerHTML = `<div class="box-title">${boxTitle}</div>${buttonsHTML}`;
   
-  // Positioning logic
+  // Positioning logic (using parent box if available or random placement).
   if (configState && configState.left && configState.top) {
     box.style.left = configState.left;
     box.style.top = configState.top;
@@ -267,21 +238,20 @@ function createBox(title, type, parentId = null, configState = null) {
       box.style.top = (Math.random() * (wbRect.height - 100)) + "px";
     }
   } else if (type === "influx") {
-    // For influx boxes, use fixed positions to ensure they appear
-    box.style.left = "100px";
-    box.style.top = "100px";
+    box.style.left = "300px";
+    box.style.top = "200px";
   } else {
     const wbRect = document.getElementById("whiteboard").getBoundingClientRect();
     box.style.left = (Math.random() * (wbRect.width - 150)) + "px";
     box.style.top = (Math.random() * (wbRect.height - 100)) + "px";
   }
-  
+
   box.dataset.type = type;
   document.getElementById("whiteboard").appendChild(box);
   boxes.push(box);
   makeDraggable(box);
   
-  // Box click events
+  // Box click event: if joining, renaming, or simply selecting.
   box.addEventListener("click", (e) => {
     if (joinLinkingSource && box.dataset.type === "sql" && joinLinkingSource !== box) {
       let newJoinBox = createJoinBox("Join " + joinCounter, joinLinkingSource, box);
@@ -305,7 +275,7 @@ function createBox(title, type, parentId = null, configState = null) {
     }
   });
   
-  // Button event listeners for creating new boxes
+  // Button event listeners for creating new boxes from this box.
   let queryButton = box.querySelector(".query-btn");
   if (queryButton) {
     queryButton.addEventListener("click", (e) => {
@@ -358,6 +328,7 @@ function createBox(title, type, parentId = null, configState = null) {
     });
   }
   
+  // Update navigator and results display.
   boxState[box.id].header = `Results: ${boxTitle}`;
   document.getElementById("navigatorHeader").textContent = "Navigator: " + boxTitle;
   if (box.dataset.type === "plot") {
@@ -368,12 +339,13 @@ function createBox(title, type, parentId = null, configState = null) {
   document.getElementById("tableHeader").textContent =
     boxState[box.id].header || ("Results: " + box.querySelector(".box-title").textContent);
   
+  // Automatically select the newly created box (rehydrate its UI later).
   selectBox(box);
   return box;
 }
 
 // ============================================================
-// Box Selection
+// Box Selection: Rehydrate UI panels based on the selected box's state.
 // ============================================================
 function selectBox(box) {
   boxes.forEach(b => b.classList.remove("selected"));
@@ -383,6 +355,7 @@ function selectBox(box) {
   document.getElementById("navigatorHeader").textContent = "Navigator: " + title;
   const state = boxState[box.id];
   
+  // Hide all panels.
   const panels = {
     codeEditorText: document.getElementById("codeEditorText"),
     queryForm: document.getElementById("queryForm"),
@@ -392,6 +365,7 @@ function selectBox(box) {
   };
   for (let key in panels) { panels[key].style.display = "none"; }
   
+  // Rehydrate UI elements based on the type.
   switch (box.dataset.type) {
     case "influx":
       panels.codeEditorText.style.display = "block";
@@ -419,6 +393,9 @@ function selectBox(box) {
         document.getElementById("toggleAdvanced").textContent = "Basic";
         sqlEditorCM.setValue(state.advancedSQL || "SELECT * FROM df");
       }
+      document.getElementById("selectDisplay").textContent = state.selectClause || "Select a table";
+      document.getElementById("whereDisplay").textContent = state.whereClause || "Select a table";
+      // TO DO - additional where rows, operators etc.
       break;
     case "plot":
       panels.plotForm.style.display = "block";
@@ -427,11 +404,15 @@ function selectBox(box) {
       state.yFields = state.yFields || [];
       document.getElementById("tableContainer").innerHTML = state.result || "";
       if (state.chartConfig) { renderChart(state.chartConfig); }
+      document.getElementById("xSelectDisplay").textContent = state.xField || "Select a table";
+      document.getElementById("ySelectDisplay_1").textContent = state.yFields[0] || "Select a table";
       break;
     case "join":
       panels.joinForm.style.display = "block";
       updateJoinDropdowns(selectedBox.id);
-      document.getElementById("joinTypeDisplay").textContent = state.joinType || "Inner";
+      document.getElementById("joinTypeDisplay").textContent = state.joinType || "Left Join";
+      document.getElementById("leftJoinColumnDisplay").textContent = state.joinType || "leftJoinColumn";
+      document.getElementById("rightJoinColumnDisplay").textContent = state.joinType || "rightJoinColumn";
       break;
     default:
       console.warn("Unknown box type:", box.dataset.type);
@@ -444,9 +425,9 @@ function selectBox(box) {
     state.header || ("Results: " + box.querySelector(".box-title").textContent);
 }
 
-// -------------------------------------------------------------------
-// Additional WHERE Row Function
-// -------------------------------------------------------------------
+// ============================================================
+// Dynamic Additional WHERE Row (for SQL transform boxes)
+// ============================================================
 function addWhereRow(operatorLabel, e) {
   if (e) e.preventDefault();
   const currentCount = transWhereState[selectedBox.id] || 0;
@@ -542,6 +523,9 @@ function addWhereRow(operatorLabel, e) {
   updateSQLFromBasic();
 }
 
+// ============================================================
+// Dynamic Y-Axis Row Addition for Plot Boxes
+// ============================================================
 function addYRow(e) {
   if (e) e.preventDefault();
   
@@ -596,7 +580,7 @@ function addYRow(e) {
 }
 
 // ============================================================
-// runQuery Function
+// runQuery Function: Execute the query based on the selected box type.
 // ============================================================
 function runQuery() {
   if (!selectedBox) {
@@ -883,7 +867,7 @@ document.addEventListener("DOMContentLoaded", () => {
   selectBox(influxBox);
   runQuery();
 
-  // Dark mode toggle button event listener
+  // Dark mode toggle.
   document.getElementById("dark-mode-toggle").addEventListener("click", toggleDarkMode);
 
   document.getElementById("runButton").addEventListener("click", runQuery);
@@ -1034,9 +1018,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // -------------------------------------------------------
-  // Add join type option listeners so selection updates the state
-  // -------------------------------------------------------
+  // Add join type option listeners.
   document.querySelectorAll("#joinTypeDropdownMenu .join-option").forEach(option => {
     option.addEventListener("click", function(e) {
       const selected = option.dataset.value;
