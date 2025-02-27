@@ -1,4 +1,4 @@
-/*==============================================================================
+/*============================================================================== 
    Base Reset and Global Styles
 ==============================================================================*/
 * {
@@ -10,6 +10,7 @@
 html, body {
   font-family: 'Inter', sans-serif;
   font-size: 12px;
+  color: var(--font-color);
   font-weight: normal;
   align-items: center;
   height: 100%;
@@ -21,8 +22,12 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: normal;
   font-size: 12px;
   margin: 0;
+  color: var(--font-color);
 }
 
+/*============================================================================== 
+   Root Variables (Light Mode by Default)
+==============================================================================*/
 :root {
   --primary-color: #3d82cb;
   --primary-hover: #51d0a2;
@@ -31,9 +36,25 @@ h1, h2, h3, h4, h5, h6 {
   --background-dark: hsl(0, 0%, 99%);
   --background-other: hsl(0, 0%, 87%);
   --background-header: hsl(0, 0%, 96%);
+  --font-color:black;
 }
 
-/*==============================================================================
+/*============================================================================== 
+   Dark Mode Styles via Root Variable Overrides
+==============================================================================*/
+body.dark-mode {
+  /* Override root variables for dark mode */
+  --primary-color: #3d82cb;
+  --primary-hover: #51d0a2;
+  --border-color: hsl(0, 0%, 40%);
+  --background-light: hsl(0, 0%, 15%);
+  --background-dark: hsl(0, 0%, 10%);
+  --background-other: hsl(0, 0%, 25%);
+  --background-header: hsl(0, 0%, 20%);
+  --font-color:white;
+}
+
+/*============================================================================== 
    Layout Containers
 ==============================================================================*/
 #container {
@@ -214,7 +235,6 @@ h1, h2, h3, h4, h5, h6 {
 #additionalWhereContainer {
   max-height: 150px;
   overflow-y: auto;
-  /* Ensure dropdowns are not clipped */
   overflow: visible;
 }
 
@@ -226,7 +246,7 @@ h1, h2, h3, h4, h5, h6 {
   flex-shrink: 0;
 }
 
-/*==============================================================================
+/*============================================================================== 
    Form Elements
 ==============================================================================*/
 #queryForm,
@@ -254,7 +274,6 @@ h1, h2, h3, h4, h5, h6 {
 .sql-row select {
   font-family: 'Inter', sans-serif !important;
   font-size: 12px !important;
-  color: #000;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   height: 30px !important;
@@ -267,7 +286,7 @@ select::placeholder {
   font-size: 12px !important;
 }
 
-/*----------------------------------------------------------------------------
+/*---------------------------------------------------------------------------- 
    Custom Dropdowns (shared styling)
 ----------------------------------------------------------------------------*/
 .custom-dropdown {
@@ -283,7 +302,6 @@ select::placeholder {
   border: 1px solid var(--border-color);
   border-radius: 4px;
   background-color: var(--background-light);
-  color: #000;
   cursor: pointer;
   text-align: left;
   font-size: 12px;
@@ -396,11 +414,11 @@ select::placeholder {
 
 .plot-row {
   display: inline-flex;
-  align-items: center; /* Center items vertically */
+  align-items: center;
   padding: 5px;
 }
 
-/*----------------------------------------------------------------------------
+/*---------------------------------------------------------------------------- 
    SQL Editor Row Layout
 ----------------------------------------------------------------------------*/
 .sql-row {
@@ -433,7 +451,7 @@ select::placeholder {
   margin: 10px;
 }
 
-/*----------------------------------------------------------------------------
+/*---------------------------------------------------------------------------- 
    Box Styling
 ----------------------------------------------------------------------------*/
 .box {
@@ -468,7 +486,7 @@ select::placeholder {
   margin-bottom: 5px;
 }
 
-/*----------------------------------------------------------------------------
+/*---------------------------------------------------------------------------- 
    Buttons
 ----------------------------------------------------------------------------*/
 .plot-btn,
@@ -617,7 +635,7 @@ select::placeholder {
   animation: pulsate 1s infinite;
 }
 
-/*----------------------------------------------------------------------------
+/*---------------------------------------------------------------------------- 
    CodeMirror SQL Editor
 ----------------------------------------------------------------------------*/
 .CodeMirror {
@@ -626,24 +644,22 @@ select::placeholder {
   height: auto;
 }
 
-/*----------------------------------------------------------------------------
-   Logo Styling
+/*---------------------------------------------------------------------------- 
+   Logo Styling (moved to top left)
 ----------------------------------------------------------------------------*/
 #logo {
   position: fixed;
   top: 20px;
-  right: 30px;
+  left: 30px;
   font-family: 'Inter', sans-serif;
   font-size: 32px;
   color: var(--primary-color);
   z-index: 4000;
   font-weight: bold;
-  text-align: right;
-  align-items: top;
-  justify-content: right;
+  text-align: left;
 }
 
-/*----------------------------------------------------------------------------
+/*---------------------------------------------------------------------------- 
    Animations
 ----------------------------------------------------------------------------*/
 .spinner {
@@ -664,21 +680,29 @@ select::placeholder {
   50% { transform: scale(1.1); }
   100% { transform: scale(1); }
 }
-
-/*---------------------------------------------------------------------------
-   Updated Dropdown and Y-Row Styles
----------------------------------------------------------------------------*/
-.plot-row {
-  display: inline-flex;
-  align-items: center; /* Center items vertically */
-  padding: 5px;
-}
-
-.remove-y-btn {
-  margin-left: 5px; /* Add space between dropdown and remove button */
-}
-
-/* Ensure additional WHERE dropdown menus appear on top */
-#additionalWhereContainer .where-dropdown-menu {
+/*============================================================================== 
+   Dark Mode Toggle Button
+==============================================================================*/
+#dark-mode-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--background-light);
+  color: #ffffff;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
   z-index: 5000;
+  transition: background-color 0.3s;
+}
+
+#dark-mode-toggle:hover {
+  background-color: var(--primary-hover);
+}
+
+body.dark-mode #dark-mode-toggle {
+  background-color: #444444;
 }

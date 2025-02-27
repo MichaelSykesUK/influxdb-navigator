@@ -1,0 +1,496 @@
+function enableInlineRename(box) {
+  const titleDiv = box.querySelector(".box-title");
+  const currentName = titleDiv.textContent;
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = currentName;
+  input.style.fontSize = "12px";
+  titleDiv.replaceWith(input);
+  input.focus();
+  input.select();
+  input.addEventListener("blur", () => finishRename(box, input.value));
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") input.blur(); });
+}
+
+function finishRename(box, newName) {
+  const newTitle = document.createElement("div");
+  newTitle.className = "box-title";
+  newTitle.textContent = newName;
+  box.querySelector("input").replaceWith(newTitle);
+  if (box === selectedBox) document.getElementById("navigatorHeader").textContent = "Navigator: " + newName;
+}
+
+function makeDraggable(el) {
+  let isDragging = false, offsetX = 0, offsetY = 0;
+  el.addEventListener("mousedown", function(e) {
+    if (e.target.classList.contains("plot-btn") || e.target.classList.contains("minus-btn") ||
+        e.target.classList.contains("join-btn") || e.target.tagName === "INPUT") return;
+    isDragging = true;
+    offsetX = e.clientX - el.offsetLeft;
+    offsetY = e.clientY - el.offsetTop;
+    function onMouseMove(e) {
+      if (!isDragging) return;
+      el.style.left = (e.clientX - offsetX) + "px";
+      el.style.top = (e.clientY - offsetY) + "px";
+      updateConnectors();
+    }
+    function onMouseUp() {
+      isDragging = false;
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    }
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  });
+}
+
+function connectBoxes(box1, box2, color = "#007acc") {
+  const svg = document.getElementById("canvasSVG");
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  line.setAttribute("stroke", color);
+  line.setAttribute("stroke-width", "1.5");
+  svg.appendChild(line);
+  connectors.push({ line, box1, box2 });
+  updateConnectors();
+}
+
+function updateConnectors() {
+  connectors.forEach(conn => {
+    const rect1 = conn.box1.getBoundingClientRect();
+    const rect2 = conn.box2.getBoundingClientRect();
+    if (rect2.left >= rect1.left + rect1.width / 2) {
+      conn.line.setAttribute("x1", rect1.right - 1);
+      conn.line.setAttribute("y1", rect1.top + rect1.height / 2);
+      conn.line.setAttribute("x2", rect2.left + 1);
+      conn.line.setAttribute("y2", rect2.top + rect2.height / 2);
+    } else {
+      conn.line.setAttribute("x1", rect1.left + 1);
+      conn.line.setAttribute("y1", rect1.top + rect1.height / 2);
+      conn.line.setAttribute("x2", rect2.right - 1);
+      conn.line.setAttribute("y2", rect2.top + rect2.height / 2);
+    }
+  });
+}
+
+function startResizeHorizontal(e) {
+  e.preventDefault();
+  let startY = e.clientY;
+  const whiteboard = document.getElementById("whiteboard");
+  const terminal = document.getElementById("terminal");
+  const minWhiteboardHeight = 100;
+  const minTerminalHeight = 100;
+  function doDrag(e) {
+    const dy = e.clientY - startY;
+    let newWhiteboardHeight = whiteboard.offsetHeight + dy;
+    let newTerminalHeight = terminal.offsetHeight - dy;
+    if (newWhiteboardHeight < minWhiteboardHeight) {
+      newWhiteboardHeight = minWhiteboardHeight;
+      newTerminalHeight = whiteboard.offsetHeight + terminal.offsetHeight - minWhiteboardHeight;
+    }
+    if (newTerminalHeight < minTerminalHeight) {
+      newTerminalHeight = minTerminalHeight;
+      newWhiteboardHeight = whiteboard.offsetHeight + terminal.offsetHeight - minTerminalHeight;
+    }
+    whiteboard.style.height = newWhiteboardHeight + "px";
+    terminal.style.height = newTerminalHeight + "px";
+    startY = e.clientY;
+  }
+  function stopDrag() {
+    document.removeEventListener("mousemove", doDrag);
+    document.removeEventListener("mouseup", stopDrag);
+  }
+  document.addEventListener("mousemove", doDrag);
+  document.addEventListener("mouseup", stopDrag);
+}
+
+function startResizeVertical(e) {
+  e.preventDefault();
+  let startX = e.clientX;
+  const terminal = document.getElementById("terminal");
+  const leftTerminal = document.getElementById("leftTerminal");
+  const rightTerminal = document.getElementById("rightTerminal");
+  const totalWidth = terminal.offsetWidth;
+  function doDrag(e) {
+    const dx = e.clientX - startX;
+    leftTerminal.style.width = (leftTerminal.offsetWidth + dx) + "px";
+    rightTerminal.style.width = (totalWidth - leftTerminal.offsetWidth - 5) + "px";
+    document.getElementById("verticalDivider").style.left = leftTerminal.offsetWidth + "px";
+    startX = e.clientX;
+  }
+  function stopDrag() {
+    document.removeEventListener("mousemove", doDrag);
+    document.removeEventListener("mouseup", stopDrag);
+  }
+  document.addEventListener("mousemove", doDrag);
+  document.addEventListener("mouseup", stopDrag);
+}
+
+function setRunButtonLoading(isLoading) {
+  const runButton = document.getElementById("runButton");
+  if (isLoading) {
+    runButton.classList.add("loading");
+    runButton.disabled = true;
+  } else {
+    runButton.classList.remove("loading");
+    runButton.disabled = false;
+  }
+}
+
+function exportCSV() {
+  if (!selectedBox) { alert("No box selected."); return; }
+  const state = boxState[selectedBox.id];
+  if (!state.data || state.data.length === 0) { alert("No data to export."); return; }
+  const columns = state.data._columns || Object.keys(state.data[0]);
+  let csv = [columns.map(key => `"${key.replace(/"/g, '""')}"`).join(",")];
+  state.data.forEach(row => { csv.push(columns.map(key => `"${String(row[key]).replace(/"/g, '""')}"`).join(",")); });
+  const blob = new Blob([csv.join("\n")], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "table_results.csv";
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function renderChart(config) {
+  const container = document.getElementById("tableContainer");
+  container.innerHTML = '<canvas id="chartCanvas"></canvas>';
+  const ctx = document.getElementById("chartCanvas").getContext("2d");
+  if (currentChart) { currentChart.destroy(); }
+  currentChart = new Chart(ctx, config);
+}
+
+function toggleMaximize() {
+  const rt = document.getElementById("root");
+  if (!rt.classList.contains("maximized")) {
+    rt.classList.add("maximized");
+  } else {
+    rt.classList.remove("maximized");
+  }
+}
+
+function getParentColumns(plotBoxId) {
+  const plotBoxState = AppState.boxState[plotBoxId];
+  if (!plotBoxState) return [];
+  const parentState = AppState.boxState[plotBoxState.parent];
+  if (parentState && parentState.data && parentState.data.length > 0) {
+    return Object.keys(parentState.data[0]);
+  }
+  return [];
+}
+
+function addDropdownSearch(menu, searchInputClass, optionSelector) {
+  // Clear existing menu content
+  menu.innerHTML = "";
+
+  // Check if search input exists already, if not, create and insert it
+  if (!menu.querySelector(`.${searchInputClass}`)) {
+    const searchInput = document.createElement("input");
+    searchInput.className = searchInputClass;
+    searchInput.placeholder = "Search...";
+    searchInput.addEventListener("input", function () {
+      const filter = searchInput.value.toLowerCase();
+      menu.querySelectorAll(optionSelector).forEach(option => {
+        const text = option.textContent.toLowerCase();
+        option.style.display = text.includes(filter) ? "" : "none";
+      });
+    });
+    menu.insertBefore(searchInput, menu.firstChild);
+  }
+}
+
+function populateDropdown(menu, options, optionClass, button) {
+  options.forEach(option => {
+    const opt = document.createElement("div");
+    opt.className = optionClass;
+    opt.textContent = option;
+    opt.dataset.value = option;
+    opt.addEventListener("click", function () {
+      const btn = document.getElementById(button);
+      btn.dataset.selected = option;
+      btn.querySelector("span").textContent = option;
+      menu.style.display = "none";
+    });
+    menu.appendChild(opt);
+  });
+}
+
+function populateDropdownMulti(menu, options, optionClass, button) {
+  options.forEach(option => {
+    const opt = document.createElement("div");
+    opt.className = optionClass;
+    opt.textContent = option;
+    opt.dataset.value = option;
+    opt.addEventListener("click", function () {
+      const btn = document.getElementById(button);
+      btn.dataset.selected = option;
+      btn.querySelector("span").textContent = option;
+      menu.style.display = "none";
+    });
+    menu.appendChild(opt);
+  });
+}
+
+function addClearOption(menu, optionClass, button) {
+  const clearOpt = document.createElement("div");
+  clearOpt.className = optionClass;
+  clearOpt.textContent = "Clear";
+  clearOpt.dataset.value = "";
+  clearOpt.addEventListener("click", function () {
+    const btn = document.getElementById(button);
+    btn.dataset.selected = "";
+    btn.querySelector("span").textContent = "Select columns";
+    menu.style.display = "none";
+  });
+  menu.appendChild(clearOpt);
+}
+
+function createJoinBox(title, leftSQLBox, rightSQLBox) {
+  const joinState = {
+    leftParent: leftSQLBox.id,
+    rightParent: rightSQLBox.id,
+    joinType: "Inner",
+    leftJoinColumn: "",
+    rightJoinColumn: "",
+    title: title
+  };
+  return createBox(title, "join", null, joinState);
+}
+
+function deleteBox(box) {
+  let nextSelectedId = null;
+  if (AppState.selectedBox === box && AppState.boxState[box.id] && AppState.boxState[box.id].parent) {
+    nextSelectedId = AppState.boxState[box.id].parent;
+  }
+  let toDelete = [box];
+  let found = true;
+  while (found) {
+    found = false;
+    AppState.connectors.forEach(conn => {
+      if (toDelete.includes(conn.box1) && !toDelete.includes(conn.box2)) {
+        toDelete.push(conn.box2);
+        found = true;
+      }
+    });
+  }
+  AppState.connectors = AppState.connectors.filter(conn => {
+    if (toDelete.includes(conn.box1) || toDelete.includes(conn.box2)) {
+      conn.line.remove();
+      return false;
+    }
+    return true;
+  });
+  toDelete.forEach(b => {
+    const idx = AppState.boxes.indexOf(b);
+    if (idx > -1) AppState.boxes.splice(idx, 1);
+    if (AppState.boxState[b.id]) delete AppState.boxState[b.id];
+    b.remove();
+  });
+  updateConnectors();
+  if (toDelete.includes(AppState.selectedBox)) {
+    const parentEl = nextSelectedId ? document.getElementById(nextSelectedId) : (AppState.boxes.length > 0 ? AppState.boxes[0] : null);
+    if (parentEl) {
+      selectBox(parentEl);
+    } else {
+      AppState.selectedBox = null;
+      document.getElementById("navigatorHeader").textContent = "Navigator:";
+      document.getElementById("tableHeader").textContent = "Results:";
+      document.getElementById("tableContainer").innerHTML = "";
+    }
+  }
+}
+
+function runQueryForBox(box) {
+  selectBox(box);
+  runQuery();
+}
+
+function displayTable(dataArray) {
+  const container = document.getElementById("tableContainer");
+  if (!dataArray || dataArray.length === 0) {
+    container.innerHTML = "";
+    updateTableHeader(dataArray, "");
+    return;
+  }
+  const columns = dataArray._columns || Object.keys(dataArray[0]);
+  let totalCells = dataArray.length * columns.length;
+  let maxRows = dataArray.length;
+  if (totalCells > 100000) {
+    if (100 * columns.length <= 100000) { maxRows = 100; }
+    else if (50 * columns.length <= 100000) { maxRows = 50; }
+    else if (10 * columns.length <= 100000) { maxRows = 10; }
+    else { maxRows = 0; }
+  }
+  const displayData = dataArray.slice(0, maxRows);
+  const note = (maxRows < dataArray.length) ? "Showing first " + maxRows + " rows" : "";
+  let table = `<table style="font-size:12px; width:100%; border-collapse:collapse;"><thead><tr>`;
+  columns.forEach(key => { table += `<th style="border:1px solid #ddd; padding:4px; white-space: nowrap;">${key}</th>`; });
+  table += `</tr></thead><tbody>`;
+  displayData.forEach(row => {
+    table += `<tr>`;
+    columns.forEach(key => { table += `<td style="border:1px solid #ddd; padding:4px; white-space: nowrap;">${row[key]}</td>`; });
+    table += `</tr>`;
+  });
+  table += `</tbody></table>`;
+  if (note) {
+    table += `<div style="font-style: italic; padding-top:5px;">${note}</div>`;
+  }
+  container.innerHTML = table;
+  updateTableHeader(dataArray, note);
+}
+
+// ============================================================
+// Configuration Functions
+// ============================================================
+
+function saveConfig() {
+  const config = {
+    boxes: AppState.boxes.map(box => {
+      const state = AppState.boxState[box.id] || {};
+      let runArgs = {};
+      if (box.dataset.type === "influx") {
+        runArgs = { measurements: state.measurements };
+      } else if (box.dataset.type === "table") {
+        runArgs = { table: state.table, start_time: state.start_time, end_time: state.end_time };
+      } else if (box.dataset.type === "sql") {
+        runArgs = { sql: state.sqlMode === "basic" ? state.basicSQL : state.advancedSQL };
+      } else if (box.dataset.type === "plot") {
+        runArgs = { xField: state.xField, yFields: state.yFields };
+      } else if (box.dataset.type === "join") {
+        runArgs = { joinType: state.joinType, leftJoinColumn: state.leftJoinColumn, rightJoinColumn: state.rightJoinColumn };
+      }
+      return {
+        id: box.id,
+        type: box.dataset.type,
+        title: box.querySelector(".box-title").textContent,
+        runArgs: runArgs,
+        position: { left: box.style.left, top: box.style.top }
+      };
+    }),
+    counters: {
+      tableQueryCounter: AppState.tableQueryCounter,
+      sqlTransformCounter: AppState.sqlTransformCounter,
+      plotCounter: AppState.plotCounter,
+      joinCounter: AppState.joinCounter,
+      boxIdCounter: AppState.boxIdCounter
+    }
+  };
+  const configStr = JSON.stringify(config);
+  const blob = new Blob([configStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "config.json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function loadConfig(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const config = JSON.parse(e.target.result);
+    AppState.boxes.forEach(box => deleteBox(box));
+    AppState.boxes = [];
+    AppState.connectors = [];
+    AppState.boxState = {};
+    AppState.tableQueryCounter = config.counters.tableQueryCounter;
+    AppState.sqlTransformCounter = config.counters.sqlTransformCounter;
+    AppState.plotCounter = config.counters.plotCounter;
+    AppState.joinCounter = config.counters.joinCounter;
+    AppState.boxIdCounter = config.counters.boxIdCounter;
+    config.boxes.forEach(boxConfig => {
+      const box = createBox(boxConfig.title, boxConfig.type, null, boxConfig.runArgs);
+      box.style.left = boxConfig.position.left;
+      box.style.top = boxConfig.position.top;
+      AppState.boxes.push(box);
+    });
+    updateConnectors();
+  };
+  reader.readAsText(file);
+}
+
+function updateSQLFromBasic() { 
+  if (!selectedBox || selectedBox.dataset.type !== "sql") { 
+    return;
+  }
+  const state = boxState[selectedBox.id];
+  let selectClause = document.getElementById("selectDisplay").textContent.trim();
+  if (!selectClause || selectClause === "Select columns") {
+    selectClause = "*";
+  } else {
+    selectClause = selectClause.split(",").map(col => `"${col.trim()}"`).join(", ");
+  }
+  let whereClause = "";
+  let baseColumn = document.getElementById("whereDisplay").textContent.trim();
+  let opText = document.getElementById("operatorDisplay").textContent.trim();
+  const opMap = { "=": "=", "<": "<", ">": ">" };
+  let baseOperator = opMap[opText] || "=";
+  let baseValue = document.getElementById("whereValue").value.trim();
+  if (baseColumn && baseColumn !== "Select columns" && baseValue) {
+    whereClause = `"${baseColumn}" ${baseOperator} "${baseValue}"`;
+  }
+  document.querySelectorAll("#additionalWhereContainer .where-condition").forEach(cond => {
+    let col = cond.querySelector(".where-button span").textContent.trim();
+    let opTxt = cond.querySelector(".operator-button span").textContent.trim();
+    let opSym = opMap[opTxt] || "=";
+    let val = cond.querySelector(".whereValue").value.trim();
+    let operatorLabelElem = cond.querySelector(".where-operator-label");
+    let opLabel = (operatorLabelElem && operatorLabelElem.textContent.trim()) || "AND";
+    if (col && col !== "Select columns" && val) {
+      if (whereClause !== "") { whereClause += " " + opLabel + " "; }
+      whereClause += `"${col}" ${opSym} "${val}"`;
+    }
+  });
+  let formattedSQL = "";
+  if (whereClause) {
+    formattedSQL = "SELECT " + selectClause + " FROM df\nWHERE " + whereClause.replace(/ (AND|OR) /g, "\n$1 ");
+  } else {
+    formattedSQL = "SELECT " + selectClause + " FROM df";
+  }
+
+  state.basicSQL = formattedSQL;
+  const previewEl = document.getElementById("basicSQLPreview");
+  let labelEl = document.getElementById("generatedSQLLabel");
+  if (!labelEl) {
+    labelEl = document.createElement("label");
+    labelEl.id = "generatedSQLLabel";
+    labelEl.textContent = "Generated SQL Statement:";
+    previewEl.parentNode.insertBefore(labelEl, previewEl);
+  }
+  previewEl.innerHTML = "<pre>" + formattedSQL + "</pre>";
+}
+
+function resetBasicSQL() {
+  if (!selectedBox || selectedBox.dataset.type !== "sql") return;
+  document.getElementById("selectDisplay").textContent = "Select columns";
+  document.getElementById("selectButton").dataset.selected = "";
+  document.getElementById("whereDisplay").textContent = "Select columns";
+  document.getElementById("whereButton").dataset.selected = "";
+  document.getElementById("operatorDisplay").textContent = "=";
+  document.getElementById("whereValue").value = "";
+  document.getElementById("additionalWhereContainer").innerHTML = "";
+  updateSQLFromBasic();
+}
+
+function resetAdvancedSQL() {
+  if (!selectedBox || selectedBox.dataset.type !== "sql") return;
+  sqlEditorCM.setValue("SELECT * FROM df");
+}
+
+function updateTableHeader(dataArray, note = "") {
+  const header = document.getElementById("tableHeader");
+  const currentBox = document.querySelector(".box.selected");
+  if (!currentBox) {
+    header.textContent = "Results: No selection";
+    return;
+  }
+  const boxTitle = currentBox.querySelector(".box-title").textContent;
+  header.textContent = dataArray && dataArray.length > 0 ?
+    `Results: ${boxTitle} (${dataArray.length} Rows x ${Object.keys(dataArray[0]).length} Columns) ${note}` :
+    `Results: ${boxTitle}`;
+  boxState[currentBox.id].header = header.textContent;
+}
