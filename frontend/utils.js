@@ -278,7 +278,10 @@ function addDropdownSearch(menu, searchInputClass, optionClass) {
   }
 }
 
-function populateDropdown(menu, options, optionClass, button) {
+/*------------------------------------------------------------------------------
+   Updated Dropdown Functions – now accept an optional callback to update state.
+------------------------------------------------------------------------------*/
+function populateDropdown(menu, options, optionClass, button, callback) {
   options.forEach(option => {
     let opt = document.createElement("div");
     opt.className = optionClass;
@@ -288,12 +291,13 @@ function populateDropdown(menu, options, optionClass, button) {
       let btn = document.getElementById(button);
       btn.dataset.selected = option;
       btn.querySelector("span").textContent = option;
+      if (callback) callback(option);
     });
     menu.appendChild(opt);
   });
 }
 
-function populateDropdownMulti(menu, options, optionClass, button) {
+function populateDropdownMulti(menu, options, optionClass, button, callback) {
   options.forEach(option => {
     let opt = document.createElement("div");
     opt.className = optionClass;
@@ -309,6 +313,7 @@ function populateDropdownMulti(menu, options, optionClass, button) {
       }
       btn.dataset.selected = current.join(",");
       btn.querySelector("span").textContent = current.length ? current.join(", ") : "Select columns";
+      if (callback) callback(current);
     });
     menu.appendChild(opt);
   });

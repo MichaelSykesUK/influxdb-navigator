@@ -30,7 +30,7 @@ h1, h2, h3, h4, h5, h6 {
 ==============================================================================*/
 :root {
   --primary-color: #3d82cb;
-  --primary-hover: #51d0a2;
+  --primary-hover: #d3d3d3;
   --border-color: hsl(0, 0%, 87%);
   --background-light: hsl(0, 0%, 100%);
   --background-dark: hsl(0, 0%, 99%);
@@ -45,7 +45,7 @@ h1, h2, h3, h4, h5, h6 {
 body.dark-mode {
   /* Override root variables for dark mode */
   --primary-color: #3d82cb;
-  --primary-hover: #51d0a2;
+  --primary-hover: #858585;
   --border-color: hsl(0, 0%, 40%);
   --background-light: hsl(0, 0%, 15%);
   --background-dark: hsl(0, 0%, 10%);
@@ -159,7 +159,7 @@ body.dark-mode {
   margin-left: 5px;
   display: flex;
   align-items: center;
-  transition: color 0.3s ease, background-color 0.3s ease;
+  transition: color 0.1s ease, background-color 0.1s ease;
 }
 
 #runButton svg {
@@ -210,17 +210,16 @@ body.dark-mode {
   margin-left: 5px;
   display: flex;
   align-items: center;
-  transition: color 0.3s ease, transform 0.3s ease;
-}
-.header-buttons button:hover {
-  color: var(--primary-hover);
-}
-.header-buttons button:hover svg {
-  fill: var(--primary-hover);
+
 }
 
 .header-buttons button svg {
   fill: var(--primary-color);
+  transition: fill 0.1s ease;
+}
+
+.header-buttons button:hover svg {
+  fill: var(--primary-hover);
 }
 
 /* Table container */
@@ -486,7 +485,7 @@ select::placeholder {
   align-items: center;
   cursor: move;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  transition: border-color 0.2s ease;
+  transition: border-color 0.1s ease;
   font-family: 'Inter', sans-serif;
   font-size: 12px;
   z-index: 2;
@@ -495,7 +494,7 @@ select::placeholder {
   border-color: hsl(0, 0%, 60%);
 }
 .box.selected {
-  border-color: hsl(237, 86%, 61%);
+  border-color: hsl(228, 79%, 57%);
 }
 .box.selected:hover {
   border-color: hsl(0, 0%, 60%);
@@ -514,116 +513,36 @@ select::placeholder {
 .query-btn,
 .minus-btn {
   position: absolute;
-  width: 20px;
+  width:20px;
   height: 20px;
-  background: var(--primary-color);
-  color: var(--background-light);
+  background: transparent;
+  color: var(--primary-color);
   border: none;
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: 0px;
+  font-size: 13px;
   cursor: pointer;
   display: flex;
   justify-content: center;
   align-items: center;
-  transition: background-color 0.2s ease;
+  transition: color 0.1s ease, background-color 0.1s ease;
 }
 
-.advanced-btn,
-.import-basic-btn {
-  background: var(--primary-color);
-  color: white;
+.box button i {
+  color: var(--primary-color);
+  border-radius: 0px;
+  background: transparent;
+  position: absolute;
   border: none;
-  border-radius: 4px;
-  padding: 5px;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  margin-bottom: 10px;
-  margin-top: 5px;
-}
-
-.inline-plus-btn {
-  position: relative;
-  width: 25px;
-  height: 25px;
-  border-radius: 8px;
-  margin-left: 5px;
-  background: var(--primary-color);
-  color: var(--background-light);
-  border: none;
-  font-size: 12px;
   cursor: pointer;
   display: flex;
   justify-content: center;
   align-items: center;
-  transition: background-color 0.2s ease;
-}
-.and-or-btn {
-  position: relative;
-  width: 35px;
-  height: 20px;
-  border-radius: 5px;
-  margin-left: 5px;
-  background: var(--primary-color);
-  color: var(--background-light);
-  border: none;
-  font-size: 12px;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: background-color 0.2s ease;
+  transition: color 0.1s ease, background-color 0.1s ease;
 }
 
-.remove-where-btn,
-.remove-y-btn {
-  background: var(--primary-color);
-  color: var(--background-light);
-  border: none;
-  border-radius: 25%;
-  width: 20px;
-  height: 20px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 12px;
-  padding: 0;
-  transition: background-color 0.2s ease;
-  margin-left: 5px;
-}
-
-.remove-y-btn svg {
-  width: 12px;
-  height: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.import-basic-btn {
-  background: var(--primary-color);
-  color: var(--background-light);
-  padding: 5px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  display: inline-block;
-}
-
-.plot-btn:hover,
-.transform-btn:hover,
-.join-btn:hover,
-.query-btn:hover,
-.minus-btn:hover,
-.inline-plus-btn:hover,
-.and-or-btn:hover,
-.remove-where-btn:hover,
-.remove-y-btn:hover,
-.advanced-btn:hover,
-.import-basic-btn:hover {
-  background-color: var(--primary-hover);
+.box button i:hover {
+  color: var(--primary-hover);
+  /* background: var(--primary-hover); */
 }
 
 /* Box Button positions */
@@ -653,6 +572,109 @@ select::placeholder {
   background: #c00000;
   animation: pulsate 1s infinite;
 }
+
+/* body.dark-mode .box button i {
+  color: white;
+} */
+
+.advanced-btn,
+.import-basic-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+  margin-bottom: 10px;
+  margin-top: 5px;
+}
+
+.inline-plus-btn {
+  position: relative;
+  width: 25px;
+  height: 25px;
+  border-radius: 8px;
+  margin-left: 5px;
+  background: var(--primary-color);
+  color: var(--background-light);
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.1s ease;
+}
+.and-or-btn {
+  position: relative;
+  width: 35px;
+  height: 20px;
+  border-radius: 5px;
+  margin-left: 5px;
+  background: var(--primary-color);
+  color: var(--background-light);
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.1s ease;
+}
+
+.remove-where-btn,
+.remove-y-btn {
+  background: var(--primary-color);
+  color: var(--background-light);
+  border: none;
+  border-radius: 25%;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+  transition: background-color 0.1s ease;
+  margin-left: 5px;
+}
+
+.remove-y-btn svg {
+  width: 12px;
+  height: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.import-basic-btn {
+  background: var(--primary-color);
+  color: var(--background-light);
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-block;
+}
+
+/* .plot-btn:hover,
+.transform-btn:hover,
+.join-btn:hover,
+.query-btn:hover,
+.minus-btn:hover, */
+.inline-plus-btn:hover,
+.and-or-btn:hover,
+.remove-where-btn:hover,
+.remove-y-btn:hover,
+.advanced-btn:hover,
+.import-basic-btn:hover {
+  background-color: var(--primary-hover);
+}
+
 
 /*---------------------------------------------------------------------------- 
    CodeMirror SQL Editor
@@ -702,8 +724,10 @@ select::placeholder {
 /*============================================================================== 
    Dark Mode Toggle Button
 ==============================================================================*/
+/* Dark Mode Toggle Button */
 #dark-mode-toggle {
   background: transparent;
+  color: var(--primary-color);
   border: none;
   cursor: pointer;
   font-size: 24px;
@@ -713,36 +737,50 @@ select::placeholder {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  transition: transform 0.3s ease-in-out;
+  transition: color 0.1s ease;
   position: fixed;
   top: 20px;
   right: 20px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
   z-index: 5000;
 }
 
-#dark-mode-toggle:hover {
-  background-color: var(--primary-hover);
-}
-
-/* Dark mode button */
-#dark-mode-toggle {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-size: 24px;
+/* Ensure icons are stacked */
+#dark-mode-toggle .icon-container {
+  position: relative;
+  width: 24px;  /* Adjust based on your icon size */
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  transition: transform 0.3s ease-in-out;
+}
+
+#dark-mode-toggle:hover {
+  /* background-color: var(--primary-hover); */
+  color: var(--primary-hover);
 }
 
 /* Sun & Moon toggle effect */
-.icon-moon { display: none; }
-body.dark-mode .icon-sun { display: none; }
-body.dark-mode .icon-moon { display: inline; }
+.fas.fa-sun, 
+.fas.fa-moon {
+  position: absolute; /* Stack icons */
+  transition: opacity 1s ease;
+}
+
+.fas.fa-sun {
+  opacity: 1;
+}
+
+.fas.fa-moon {
+  opacity: 0;
+}
+
+body.dark-mode .fas.fa-sun {
+  opacity: 0;
+}
+
+body.dark-mode .fas.fa-moon {
+  opacity: 1;
+}
+
+
+
