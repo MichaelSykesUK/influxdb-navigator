@@ -41,37 +41,28 @@ function saveCurrentBoxState() {
     state.start_time = document.getElementById("startTime").value.trim();
     state.end_time = document.getElementById("endTime").value.trim();
   } else if (type === "sql") {
-    // Save the base SQL transform fields
+    // Save base SQL transform fields
     state.selectClause = document.getElementById("selectDisplay").textContent.trim();
     state.baseColumn = document.getElementById("whereDisplay").textContent.trim();
     state.baseOperator = document.getElementById("operatorDisplay").textContent.trim();
     state.baseValue = document.getElementById("whereValue").value.trim();
-    // Save additional WHERE rows
-    state.additionalWhere = [];
-    document.querySelectorAll("#additionalWhereContainer .where-condition").forEach(row => {
-      state.additionalWhere.push({
-        column: row.querySelector(".where-button span").textContent.trim(),
-        operator: row.querySelector(".operator-button span").textContent.trim(),
-        value: row.querySelector(".whereValue").value.trim(),
-        logic: row.querySelector(".where-operator-label").textContent.trim()
-      });
-    });
+    // Save additional WHERE rows using a new helper that saves even empty values
+    state.additionalWhere = getWhereConditionsFromUI();
     state.basicSQL = document.getElementById("basicSQLPreview").innerText;
     state.advancedSQL = sqlEditorCM.getValue();
     state.sqlMode = state.sqlMode || "basic";
   } else if (type === "plot") {
     state.xField = document.getElementById("xSelectDisplay").textContent.trim();
     let yFields = [];
-    // Get the base Y field (always from the element with ID "ySelectButton_1")
     let baseY = document.getElementById("ySelectButton_1").dataset.selected ||
                 document.getElementById("ySelectButton_1").querySelector("span").textContent.trim();
-    yFields.push(baseY);
-    // Get any additional Y fields
-    document.querySelectorAll("#ySelectContainer .y-select-group").forEach((group, idx) => {
-      if (idx === 0) return; // Skip the base field row
-      let val = group.querySelector("button").dataset.selected ||
-                group.querySelector("button span").textContent.trim();
-      if (val && val !== "Select a column") yFields.push(val);
+    // Even if baseY is empty, store it as ""
+    yFields.push(baseY || "");
+    document.querySelectorAll("#ySelectContainer .y-select-group").forEach(group => {
+      let btn = group.querySelector("button");
+      let val = btn.dataset.selected || btn.querySelector("span").textContent.trim();
+      // Store the value (or empty string) for each additional field
+      yFields.push(val || "");
     });
     state.yFields = yFields;
   } else if (type === "join") {
@@ -150,6 +141,42 @@ function updateJoinDropdowns(joinBoxId) {
   }
 }
 
+function getWhereConditionsFromUI() {
+  const container = document.getElementById("additionalWhereContainer");
+  const conditions = [];
+  Array.from(container.getElementsByClassName("where-condition")).forEach(row => {
+    const colElem = row.querySelector(".where-button span");
+    const opElem = row.querySelector(".operator-button span");
+    const valElem = row.querySelector(".whereValue");
+    const logicElem = row.querySelector(".where-operator-label");
+    // Save even if blank (using empty string)
+    const col = colElem ? colElem.textContent.trim() : "";
+    const operator = opElem ? opElem.textContent.trim() : "=";
+    const value = valElem ? valElem.value.trim() : "";
+    const logic = logicElem ? logicElem.textContent.trim() : "";
+    conditions.push({ column: col, operator: operator, value: value, logic: logic });
+  });
+  return conditions;
+}
+
+function loadSQLBoxState(boxId) {
+  const state = boxState[boxId];
+  if (!state) return;
+  document.getElementById("selectDisplay").textContent = state.selectClause || "Select columns";
+  document.getElementById("whereDisplay").textContent = state.baseColumn || "Select columns";
+  document.getElementById("operatorDisplay").textContent = state.baseOperator || "=";
+  document.getElementById("whereValue").value = state.baseValue || "";
+  // Clear and rebuild additional WHERE rows
+  const container = document.getElementById("additionalWhereContainer");
+  container.innerHTML = "";
+  if (state.additionalWhere && state.additionalWhere.length > 0) {
+    state.additionalWhere.forEach(cond => {
+      addWhereRow(cond.logic, null, cond);
+    });
+  }
+}
+
+
 // ============================================================
 // updateSQLFromBasic: Rebuild SQL preview from the transform box’s fields
 // ============================================================
@@ -187,10 +214,11 @@ function updateSQLFromBasic() {
     let opTxt = row.querySelector(".operator-button span").textContent.trim();
     let opSym = opMap[opTxt] || "=";
     let val = row.querySelector(".whereValue").value.trim();
-    let logic = row.querySelector(".where-operator-label").textContent.trim();
-    state.additionalWhere.push({ column: col, operator: opSym, value: val, logic: logic });
+    let operatorLabelElem = row.querySelector(".where-operator-label");
+    let opLabel = (operatorLabelElem && operatorLabelElem.textContent.trim()) || "AND";
+    state.additionalWhere.push({ column: col, operator: opSym, value: val, logic: opLabel });
     if (col && col !== "Select columns" && val) {
-      if (whereClause !== "") { whereClause += " " + logic + " "; }
+      if (whereClause !== "") { whereClause += " " + opLabel + " "; }
       whereClause += `"${col}" ${opSym} "${val}"`;
     }
   });
@@ -378,10 +406,9 @@ function addYRow(e, rowData = null) {
   let cols = getParentColumns(selectedBox.id);
   populateDropdown(menu, cols, "plot-option", `ySelectButton_${newIndex}`, function(selectedOption) {
     extraButton.dataset.selected = selectedOption;
-    if (!boxState[selectedBox.id].yFields) {
-      boxState[selectedBox.id].yFields = [];
-    }
-    boxState[selectedBox.id].yFields[newIndex - 1] = selectedOption;
+    state = boxState[selectedBox.id];
+    if (!state.yFields) { state.yFields = []; }
+    state.yFields[newIndex - 1] = selectedOption;
   });
 }
 
@@ -941,15 +968,21 @@ function createBox(title, type, parentId = null, configState = null) {
 // selectBox: Set the given box as selected and rehydrate its UI from its state.
 // ============================================================
 function selectBox(box) {
+  // Save current box state before switching
   saveCurrentBoxState();
+
+  // Remove "selected" class from all boxes and mark the new box as selected
   boxes.forEach(b => b.classList.remove("selected"));
   box.classList.add("selected");
   selectedBox = box;
+
+  // Retrieve state for this box
   const boxId = box.id;
   const state = boxState[boxId] || {};
   const title = box.querySelector(".box-title").textContent;
   document.getElementById("navigatorHeader").textContent = "Navigator: " + title;
-  
+
+  // Hide all panels
   const panels = {
     codeEditorText: document.getElementById("codeEditorText"),
     queryForm: document.getElementById("queryForm"),
@@ -957,8 +990,11 @@ function selectBox(box) {
     plotForm: document.getElementById("plotForm"),
     joinForm: document.getElementById("joinForm")
   };
-  for (let key in panels) { panels[key].style.display = "none"; }
-  
+  for (let key in panels) {
+    panels[key].style.display = "none";
+  }
+
+  // Show and populate the correct panel based on the box type
   if (box.dataset.type === "influx") {
     panels.codeEditorText.style.display = "block";
     panels.codeEditorText.value = state.code || "Run to show available tables";
@@ -972,11 +1008,12 @@ function selectBox(box) {
     document.getElementById("endTime").value = state.end_time || "";
   } else if (box.dataset.type === "sql") {
     panels.sqlEditor.style.display = "block";
-    if (!state.selectClause) state.selectClause = "";
-    if (!state.baseColumn) state.baseColumn = "";
-    if (!state.baseOperator) state.baseOperator = "=";
-    if (!state.baseValue) state.baseValue = "";
-    if (!state.additionalWhere) state.additionalWhere = [];
+    // Ensure default values are set if not already stored
+    state.selectClause = state.selectClause || "";
+    state.baseColumn = state.baseColumn || "";
+    state.baseOperator = state.baseOperator || "=";
+    state.baseValue = state.baseValue || "";
+    state.additionalWhere = state.additionalWhere || [];
     updateTransformDropdowns(boxId);
     state.sqlMode = state.sqlMode || "basic";
     if (state.sqlMode === "basic") {
@@ -994,9 +1031,10 @@ function selectBox(box) {
     document.getElementById("whereDisplay").textContent = state.baseColumn || "Select columns";
     document.getElementById("operatorDisplay").textContent = state.baseOperator || "=";
     document.getElementById("whereValue").value = state.baseValue || "";
+    // Rebuild additional WHERE rows from state
     const additionalContainer = document.getElementById("additionalWhereContainer");
     additionalContainer.innerHTML = "";
-    if (state.additionalWhere && state.additionalWhere.length > 0) {
+    if (state.additionalWhere.length > 0) {
       state.additionalWhere.forEach(rowData => {
         addWhereRow(rowData.logic, null, rowData);
       });
@@ -1004,15 +1042,15 @@ function selectBox(box) {
   } else if (box.dataset.type === "plot") {
     panels.plotForm.style.display = "block";
     updatePlotDropdowns(boxId);
-    let parentState = boxState[state.parent];
     if (!state.yFields || state.yFields.length === 0) {
       state.yFields = [""];
     }
     const yContainer = document.getElementById("ySelectContainer");
     const yValuesWrapper = yContainer.querySelector(".y-values-wrapper");
     yValuesWrapper.innerHTML = "";
+    // Rebuild Y field rows
     {
-      // Render the base Y field without a remove button.
+      // Base Y field row
       let baseY = state.yFields[0] || "";
       let groupDiv = document.createElement("div");
       groupDiv.className = "form-group y-select-group";
@@ -1044,7 +1082,7 @@ function selectBox(box) {
          state.yFields[0] = selectedOption;
       });
     }
-    // Render additional Y fields, if any.
+    // Additional Y field rows
     for (let i = 1; i < state.yFields.length; i++) {
       let yVal = state.yFields[i] || "";
       let newIndex = i + 1;
@@ -1080,7 +1118,7 @@ function selectBox(box) {
          let newYFields = [];
          yValuesWrapper.querySelectorAll(".custom-dropdown button").forEach(btn => {
            let val = btn.dataset.selected || btn.querySelector("span").textContent.trim();
-           if(val && val !== "Select a column") newYFields.push(val);
+           if (val && val !== "Select a column") newYFields.push(val);
          });
          state.yFields = newYFields;
       });
@@ -1098,7 +1136,7 @@ function selectBox(box) {
     document.getElementById("xSelectDisplay").textContent = state.xField || "Select a column";
   } else if (box.dataset.type === "join") {
     panels.joinForm.style.display = "block";
-    updateJoinDropdowns(boxId);
+    updateJoinDropdowns(box.id);
     document.getElementById("joinTypeDisplay").textContent = state.joinType || "Left Join";
     document.getElementById("leftJoinColumnDisplay").textContent = state.leftJoinColumn || "Select column";
     document.getElementById("rightJoinColumnDisplay").textContent = state.rightJoinColumn || "Select column";

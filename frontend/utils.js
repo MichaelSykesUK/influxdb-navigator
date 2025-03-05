@@ -3,7 +3,6 @@
 // This file contains all utility functions for enabling inline renaming,
 // dragging boxes, connecting boxes via SVG lines, handling dropdown menus,
 // exporting CSV, rendering charts, saving/loading configuration, and more.
-// (Adapted from your original ~500-line file with dropdown search fixes)
 // ============================================================
 
 /*------------------------------------------------------------------------------
@@ -237,25 +236,19 @@ function getParentColumns(plotBoxId) {
 
 /*------------------------------------------------------------------------------
    Updated Dropdown Search Function
-   - Automatically prepends a dot to the option selector if missing.
 ------------------------------------------------------------------------------*/
 function addDropdownSearch(menu, searchInputClass, optionClass) {
-  // Clear existing menu content
   menu.innerHTML = "";
-  // Ensure the option selector is a proper CSS selector
   let effectiveOptionSelector = optionClass;
   if (effectiveOptionSelector[0] !== ".") {
     effectiveOptionSelector = "." + effectiveOptionSelector;
   }
-  // Check if search input exists already, if not, create and insert it
   if (!menu.querySelector(`.${searchInputClass}`)) {
     let searchInput = document.createElement("input");
     searchInput.type = "text";
     searchInput.className = searchInputClass;
     searchInput.placeholder = "Search...";
-    // Prevent dropdown closing when clicking on the search box
     searchInput.addEventListener("click", e => e.stopPropagation());
-    // Handle keyup event for searching options
     searchInput.addEventListener("keyup", function () {
       let filter = searchInput.value.toLowerCase();
       menu.querySelectorAll(effectiveOptionSelector).forEach(opt => {
@@ -263,13 +256,10 @@ function addDropdownSearch(menu, searchInputClass, optionClass) {
         opt.style.display = text.includes(filter) ? "block" : "none";
       });
     });
-    // Insert the search input as the first element in the dropdown
     menu.insertBefore(searchInput, menu.firstChild);
-    // Focus event to handle dropdown visibility
     searchInput.addEventListener("focus", function () {
       menu.style.display = "block";
     });
-    // Blur event to handle closing the dropdown if clicked outside
     searchInput.addEventListener("blur", function () {
       setTimeout(function () {
         menu.style.display = "none";
@@ -279,7 +269,7 @@ function addDropdownSearch(menu, searchInputClass, optionClass) {
 }
 
 /*------------------------------------------------------------------------------
-   Updated Dropdown Functions – now accept an optional callback to update state.
+   Updated Dropdown Functions
 ------------------------------------------------------------------------------*/
 function populateDropdown(menu, options, optionClass, button, callback) {
   options.forEach(option => {
@@ -447,7 +437,7 @@ function saveConfig() {
       } else if (box.dataset.type === "plot") {
         runArgs = { xField: state.xField || "", yFields: state.yFields || [], parent: state.parent || null };
       } else if (box.dataset.type === "join") {
-        runArgs = { joinType: state.joinType || "", leftJoinColumn: state.leftJoinColumn || "", rightJoinColumn: state.rightJoinColumn || "", leftParent: state.leftParent || null, rightParent: state.rightParent || null };
+        runArgs = { joinType: state.joinType || "", leftJoinColumn: state.leftJoinColumn || "", rightJoinColumn: state.rightJoinColumn || "", leftParent: state.leftParent || null, rightParent: state.rightJoinColumn || null };
       }
       return { id: box.id, type: box.dataset.type, title: box.querySelector(".box-title").innerText, runArgs: runArgs, left: box.style.left, top: box.style.top };
     }),
@@ -526,12 +516,15 @@ function updateSQLFromBasic() {
   } else {
     selectClause = selectClause.split(",").map(col => `"${col.trim()}"`).join(", ");
   }
-  let whereClause = "";
   let baseColumn = document.getElementById("whereDisplay").textContent.trim();
   let opText = document.getElementById("operatorDisplay").textContent.trim();
   const opMap = { "=": "=", "<": "<", ">": ">" };
   let baseOperator = opMap[opText] || "=";
   let baseValue = document.getElementById("whereValue").value.trim();
+  state.baseColumn = baseColumn;
+  state.baseOperator = baseOperator;
+  state.baseValue = baseValue;
+  let whereClause = "";
   if (baseColumn && baseColumn !== "Select columns" && baseValue) {
     whereClause = `"${baseColumn}" ${baseOperator} "${baseValue}"`;
   }
@@ -542,6 +535,7 @@ function updateSQLFromBasic() {
     let val = cond.querySelector(".whereValue").value.trim();
     let operatorLabelElem = cond.querySelector(".where-operator-label");
     let opLabel = (operatorLabelElem && operatorLabelElem.textContent.trim()) || "AND";
+    state.additionalWhere.push({ column: col, operator: opSym, value: val, logic: opLabel });
     if (col && col !== "Select columns" && val) {
       if (whereClause !== "") { whereClause += " " + opLabel + " "; }
       whereClause += `"${col}" ${opSym} "${val}"`;
