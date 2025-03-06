@@ -472,7 +472,7 @@ function runQuery() {
       let whereOperator = opMap[opText] || "=";
       let whereValue = document.getElementById("whereValue").value.trim();
       if (whereClause && whereClause !== "Select columns" && whereValue) {
-        whereClause = `"${whereClause}" ${whereOperator} "${whereValue}"`;
+        whereClauseCombined = `"${whereClause}" ${whereOperator} "${whereValue}"`;
       }
       document.querySelectorAll("#additionalWhereContainer .where-condition").forEach(cond => {
         let col = cond.querySelector(".where-button span").textContent.trim();
