@@ -386,6 +386,7 @@ function runQuery() {
     alert("Select a box first.");
     return;
   }
+  boxState[selectedBox.id].task_running = true;
   setRunButtonLoading(true);
   const state = boxState[selectedBox.id];
 
@@ -410,11 +411,14 @@ function runQuery() {
           state.data = resultArray;
         }
         state.header = document.getElementById("tableHeader").textContent;
+        boxState[selectedBox.id].task_running = false;
         setRunButtonLoading(false);
+        
       })
       .catch(err => {
         console.error("Error fetching measurements:", err);
         alert("Error fetching measurements.");
+        boxState[selectedBox.id].task_running = false;
         setRunButtonLoading(false);
       });
   } else if (selectedBox.dataset.type === "table") {
@@ -423,6 +427,7 @@ function runQuery() {
     let endTimeVal = document.getElementById("endTime").value;
     if (!tableVal || tableVal === "Select a table") {
       alert("Please select a table.");
+      boxState[selectedBox.id].task_running = false;
       setRunButtonLoading(false);
       return;
     }
@@ -450,11 +455,13 @@ function runQuery() {
           state.data = resultArray;
         }
         state.header = document.getElementById("tableHeader").textContent;
+        boxState[selectedBox.id].task_running = false;
         setRunButtonLoading(false);
       })
       .catch(err => {
         console.error("Error running query:", err);
         alert("Error running query.");
+        boxState[selectedBox.id].task_running = false;
         setRunButtonLoading(false);
       });
   } else if (selectedBox.dataset.type === "sql") {
@@ -517,6 +524,7 @@ function runQuery() {
         .catch(err => {
           console.error("Error running SQL transform:", err);
           alert("Error running SQL transform.");
+          boxState[selectedBox.id].task_running = false;
           setRunButtonLoading(false);
         });
     } else {
@@ -540,11 +548,13 @@ function runQuery() {
           state.result = document.getElementById("tableContainer").innerHTML;
           state.data = resultArray;
           state.header = document.getElementById("tableHeader").textContent;
+          boxState[selectedBox.id].task_running = false;
           setRunButtonLoading(false);
         })
         .catch(err => {
           console.error("Error running SQL transform:", err);
           alert("Error running SQL transform.");
+          boxState[selectedBox.id].task_running = false;
           setRunButtonLoading(false);
         });
     }
@@ -565,6 +575,7 @@ function runQuery() {
 
     if (!xField || xField === "Select a column" || !yField || yField === "Select a column") {
       alert("Please select an X field and at least one Y value.");
+      boxState[selectedBox.id].task_running = false;
       setRunButtonLoading(false);
       return;
     }
@@ -619,6 +630,7 @@ function runQuery() {
     state.result = document.getElementById("tableContainer").innerHTML;
     state.header = "Results: " + selectedBox.querySelector(".box-title").textContent;
     document.getElementById("tableHeader").textContent = state.header;
+    boxState[selectedBox.id].task_running = false;
     setRunButtonLoading(false);
   } else if (selectedBox.dataset.type === "join") {
     let joinType = document.getElementById("joinTypeDisplay").textContent || "Left Join";
@@ -639,6 +651,7 @@ function runQuery() {
     let rightState = boxState[state.rightParent];
     if (!leftState || !leftState.data || !rightState || !rightState.data) {
       alert("Both parent SQL transform boxes must have data to join.");
+      boxState[selectedBox.id].task_running = false;
       setRunButtonLoading(false);
       return;
     }
@@ -662,11 +675,13 @@ function runQuery() {
         state.result = document.getElementById("tableContainer").innerHTML;
         state.data = resultArray;
         state.header = document.getElementById("tableHeader").textContent;
+        boxState[selectedBox.id].task_running = false;
         setRunButtonLoading(false);
       })
       .catch(err => {
         console.error("Error running join:", err);
         alert("Error running join.");
+        boxState[selectedBox.id].task_running = false;
         setRunButtonLoading(false);
       });
   }
