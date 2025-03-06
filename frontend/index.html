@@ -39,9 +39,11 @@
       <div id="leftTerminal">
         <div class="header">
           <h3 id="navigatorHeader">Navigator:</h3>
-          <button id="runButton" title="Run">
-            <i class="fas fa-play"></i>
-          </button>
+          <div class="header-buttons">
+            <button id="runButton" title="Run">
+              <i class="fas fa-play"></i>
+            </button>
+          </div>
         </div>
         <div id="codeEditorContainer">
           <!-- InfluxDB Navigator Editor -->
@@ -53,18 +55,18 @@
               <label for="tableQueryDisplay">Table:</label>
               <div class="custom-dropdown table-dropdown">
                 <button id="tableQueryButton" aria-haspopup="true" aria-expanded="false">
-                  <span id="tableQueryDisplay">Select a table</span>
+                  <span id="tableQueryDisplay">Select a table</span> <!-- Select a table batspk__4_2_0__ethernet__65400-->
                 </button>
                 <div class="table-dropdown-menu" id="tableDropdownMenu"></div>
               </div>
             </div>
             <div class="form-group">
               <label for="startTime">Start Time:</label>
-              <input type="text" id="startTime" class="text-input-field" placeholder="YYYY-MM-DDTHH:MM:SSZ">
+              <input type="text" id="startTime" class="text-input-field" placeholder="YYYY-MM-DDTHH:MM:SSZ"> <!-- YYYY-MM-DDTHH:MM:SSZ -->
             </div>
             <div class="form-group">
               <label for="endTime">End Time:</label>
-              <input type="text" id="endTime" class="text-input-field" placeholder="YYYY-MM-DDTHH:MM:SSZ">
+              <input type="text" id="endTime" class="text-input-field" placeholder="YYYY-MM-DDTHH:MM:SSZ"> <!-- YYYY-MM-DDTHH:MM:SSZ -->
             </div>
           </div>
 
@@ -139,22 +141,19 @@
                 <div class="plot-dropdown-menu" id="xSelectDropdownMenu"></div>
               </div>
             </div>
-            <div id="ySelectContainer">
-              <div class="y-values-wrapper">
-                <div class="form-group y-select-group">
-                  <label for="ySelectDisplay_1">Y Values:</label>
-                  <div class="custom-dropdown plot-dropdown">
-                    <button id="ySelectButton_1" aria-haspopup="true" aria-expanded="false">
-                      <span id="ySelectDisplay_1">Select a column</span>
-                    </button>
-                    <div class="plot-dropdown-menu" id="ySelectDropdownMenu_1"></div>
-                  </div>
-                </div>
+            <div class="form-group">
+              <label for="ySelectDisplay">Y Values:</label>
+              <div class="custom-dropdown plot-dropdown">
+                <button id="ySelectButton" aria-haspopup="true" aria-expanded="false">
+                  <span id="ySelectDisplay">Select a column</span>
+                </button>
+                <div class="plot-dropdown-menu" id="ySelectDropdownMenu"></div>
               </div>
-              <button id="addYBtn" class="inline-plus-btn" title="Add another Y Value">
-                <i class="fas fa-plus"></i>
-              </button>
             </div>
+            <div id="ySelectContainer"></div>
+            <button id="addYBtn" class="inline-plus-btn" title="Add another Y Value">
+              <i class="fas fa-plus"></i>
+            </button>
           </div>
 
           <!-- Join Editor -->

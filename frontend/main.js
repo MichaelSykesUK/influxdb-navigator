@@ -43,34 +43,47 @@ function saveCurrentBoxState() {
   } else if (type === "sql") {
     // Save base SQL transform fields
     state.selectClause = document.getElementById("selectDisplay").textContent.trim();
-    state.baseColumn = document.getElementById("whereDisplay").textContent.trim();
-    state.baseOperator = document.getElementById("operatorDisplay").textContent.trim();
-    state.baseValue = document.getElementById("whereValue").value.trim();
+    state.whereClause = document.getElementById("whereDisplay").textContent.trim();
+    state.whereOperator = document.getElementById("operatorDisplay").textContent.trim();
+    state.whereValue = document.getElementById("whereValue").value.trim();
     // Save additional WHERE rows using a new helper that saves even empty values
-    state.additionalWhere = getWhereConditionsFromUI();
+    const container = document.getElementById("additionalWhereContainer");
+    const conditions = [];
+    Array.from(container.getElementsByClassName("where-condition")).forEach(row => {
+      const colElem = row.querySelector(".where-button span");
+      const opElem = row.querySelector(".operator-button span");
+      const valElem = row.querySelector(".whereValue");
+      const logicElem = row.querySelector(".where-operator-label");
+      // Save even if blank (using empty string)
+      const col = colElem ? colElem.textContent.trim() : "";
+      const operator = opElem ? opElem.textContent.trim() : "=";
+      const value = valElem ? valElem.value.trim() : "";
+      const logic = logicElem ? logicElem.textContent.trim() : "";
+      conditions.push({ column: col, operator: operator, value: value, logic: logic });
+        });
     state.basicSQL = document.getElementById("basicSQLPreview").innerText;
     state.advancedSQL = sqlEditorCM.getValue();
     state.sqlMode = state.sqlMode || "basic";
+    console.log("State.additionalWhere", state.additionalWhere)
   } else if (type === "plot") {
-    state.xField = document.getElementById("xSelectDisplay").textContent.trim();
-    let yFields = [];
-    let baseY = document.getElementById("ySelectButton_1").dataset.selected ||
-                document.getElementById("ySelectButton_1").querySelector("span").textContent.trim();
-    // Even if baseY is empty, store it as ""
-    yFields.push(baseY || "");
-    document.querySelectorAll("#ySelectContainer .y-select-group").forEach(group => {
-      let btn = group.querySelector("button");
-      let val = btn.dataset.selected || btn.querySelector("span").textContent.trim();
-      // Store the value (or empty string) for each additional field
-      yFields.push(val || "");
+    let xVal = document.getElementById("xSelectDisplay").textContent.trim();
+    state.xField = (xVal && xVal !== "Select a column") ? xVal : "";
+    let yVal = document.getElementById("ySelectDisplay").textContent.trim();
+    state.yField = (yVal && yVal !== "Select a column") ? yVal : "";
+    let additionalYFields = [];
+    document.querySelectorAll("#ySelectContainer .form-group").forEach(group => {
+        let btn = group.querySelector("button");
+        let val = btn.dataset.selected || btn.querySelector("span").textContent.trim();
+        additionalYFields.push(val); // Save all values, including "Select a column"
     });
-    state.yFields = yFields;
+    state.additionalYFields = additionalYFields;
   } else if (type === "join") {
     state.joinType = document.getElementById("joinTypeDisplay").textContent.trim();
     state.leftJoinColumn = document.getElementById("leftJoinColumnDisplay").textContent.trim();
     state.rightJoinColumn = document.getElementById("rightJoinColumnDisplay").textContent.trim();
   }
   boxState[boxId] = state;
+  console.log('Saved state for', boxId, boxState[boxId]);
 }
 
 // ============================================================
@@ -78,6 +91,10 @@ function saveCurrentBoxState() {
 // ============================================================
 function updateDropdownMenu(menuID, buttonID, searchClass, optionClass, options, callback) {
   let menu = document.getElementById(menuID);
+  if (!menu) {
+    console.error("Menu element is null for button:", buttonID);
+    return;
+  }
   addDropdownSearch(menu, searchClass, optionClass);
   addClearOption(menu, optionClass, buttonID);
   populateDropdown(menu, options, optionClass, buttonID, callback);
@@ -85,36 +102,66 @@ function updateDropdownMenu(menuID, buttonID, searchClass, optionClass, options,
 
 function updateDropdownMenuMulti(menuID, buttonID, searchClass, optionClass, options, callback) {
   let menu = document.getElementById(menuID);
+  if (!menu) {
+    console.error("Menu element is null for button:", buttonID);
+    return;
+  }
   addDropdownSearch(menu, searchClass, optionClass);
   addClearOption(menu, optionClass, buttonID);
   populateDropdownMulti(menu, options, optionClass, buttonID, callback);
 }
 
 function updateTransformDropdowns(boxId) { 
+  const state = boxState[boxId] || {};
   let cols = getParentColumns(boxId);
+
   updateDropdownMenuMulti("selectDropdownMenu", "selectButton", "dropdown-search", "select-option", cols, function(selectedOptions) {
-    boxState[selectedBox.id].selectClause = selectedOptions.join(", ");
-    updateSQLFromBasic();
+    state.selectClause = selectedOptions.join(", ");
   });
   updateDropdownMenu("whereDropdownMenu", "whereButton", "dropdown-search", "where-option", cols, function(selectedOption) {
-    boxState[selectedBox.id].baseColumn = selectedOption;
-    updateSQLFromBasic();
+    state.whereClause = selectedOption;
   });
+
+  for (let i = 1; i <= state.additionalWhere.length; i++) {
+    updateDropdownMenu(
+      `additionalWhereDropdownMenu_${i}`,
+      `additionalWhereButton_${i}`,
+      "dropdown-search",
+      "where-option",
+      cols,
+      function(selectedOption) {
+        state.additionalWhere[i-1] = selectedOption;
+      }
+    );
+  }
   updateSQLFromBasic();
 }
 
 function updatePlotDropdowns(boxId) {
-  let cols = getParentColumns(boxId);
-  updateDropdownMenu("xSelectDropdownMenu", "xSelectButton", "dropdown-search", "plot-option", cols, function(selectedOption) {
-    boxState[selectedBox.id].xField = selectedOption;
+  const state = boxState[boxId];
+  const cols = getParentColumns(boxId);
+
+  // Update main X dropdown
+  updateDropdownMenu("xSelectDropdownMenu", "xSelectButton", "dropdown-search", "plot-option", cols, (selected) => {
+      state.xField = selected;
+      document.getElementById("xSelectDisplay").textContent = selected;
   });
-  // Update the base Y field dropdown (using fixed IDs for the base row)
-  updateDropdownMenu("ySelectDropdownMenu_1", "ySelectButton_1", "dropdown-search", "plot-option", cols, function(selectedOption) {
-    let state = boxState[selectedBox.id];
-    if (!state.yFields || state.yFields.length === 0) {
-      state.yFields = [""];
-    }
-    state.yFields[0] = selectedOption;
+
+  // Update main Y dropdown
+  updateDropdownMenu("ySelectDropdownMenu", "ySelectButton", "dropdown-search", "plot-option", cols, (selected) => {
+      state.yField = selected;
+      document.getElementById("ySelectDisplay").textContent = selected;
+  });
+
+  // Update additional Y dropdowns
+  state.additionalYFields.forEach((yVal, i) => {
+      const menu = document.getElementById(`ySelectDropdownMenu_${i}`);
+      if (menu) {
+          updateDropdownMenu(menu, `ySelectButton_${i}`, "dropdown-search", "plot-option", cols, (selected) => {
+              state.additionalYFields[i - 1] = selected;
+              document.getElementById(`ySelectDisplay_${i}`).textContent = selected;
+          });
+      }
   });
 }
 
@@ -141,104 +188,23 @@ function updateJoinDropdowns(joinBoxId) {
   }
 }
 
-function getWhereConditionsFromUI() {
-  const container = document.getElementById("additionalWhereContainer");
-  const conditions = [];
-  Array.from(container.getElementsByClassName("where-condition")).forEach(row => {
-    const colElem = row.querySelector(".where-button span");
-    const opElem = row.querySelector(".operator-button span");
-    const valElem = row.querySelector(".whereValue");
-    const logicElem = row.querySelector(".where-operator-label");
-    // Save even if blank (using empty string)
-    const col = colElem ? colElem.textContent.trim() : "";
-    const operator = opElem ? opElem.textContent.trim() : "=";
-    const value = valElem ? valElem.value.trim() : "";
-    const logic = logicElem ? logicElem.textContent.trim() : "";
-    conditions.push({ column: col, operator: operator, value: value, logic: logic });
-  });
-  return conditions;
-}
-
 function loadSQLBoxState(boxId) {
   const state = boxState[boxId];
+  console.log('Loaded state for', boxId, state);
   if (!state) return;
   document.getElementById("selectDisplay").textContent = state.selectClause || "Select columns";
-  document.getElementById("whereDisplay").textContent = state.baseColumn || "Select columns";
-  document.getElementById("operatorDisplay").textContent = state.baseOperator || "=";
-  document.getElementById("whereValue").value = state.baseValue || "";
+  document.getElementById("whereDisplay").textContent = state.whereClause || "Select columns";
+  document.getElementById("operatorDisplay").textContent = state.whereOperator || "=";
+  document.getElementById("whereValue").value = state.whereValue || "";
   // Clear and rebuild additional WHERE rows
   const container = document.getElementById("additionalWhereContainer");
   container.innerHTML = "";
   if (state.additionalWhere && state.additionalWhere.length > 0) {
     state.additionalWhere.forEach(cond => {
+      console.log("Restoring condition:", cond);
       addWhereRow(cond.logic, null, cond);
     });
   }
-}
-
-
-// ============================================================
-// updateSQLFromBasic: Rebuild SQL preview from the transform box’s fields
-// ============================================================
-function updateSQLFromBasic() { 
-  if (!selectedBox || selectedBox.dataset.type !== "sql") { 
-    return;
-  }
-  const state = boxState[selectedBox.id];
-  let selectClause = document.getElementById("selectDisplay").textContent.trim();
-  if (!selectClause || selectClause === "Select columns") {
-    selectClause = "*";
-  } else {
-    selectClause = selectClause.split(",").map(col => `"${col.trim()}"`).join(", ");
-  }
-  
-  let baseColumn = document.getElementById("whereDisplay").textContent.trim();
-  let opText = document.getElementById("operatorDisplay").textContent.trim();
-  const opMap = { "=": "=", "<": "<", ">": ">" };
-  let baseOperator = opMap[opText] || "=";
-  let baseValue = document.getElementById("whereValue").value.trim();
-  
-  state.baseColumn = baseColumn;
-  state.baseOperator = baseOperator;
-  state.baseValue = baseValue;
-  
-  let whereClause = "";
-  if (baseColumn && baseColumn !== "Select columns" && baseValue) {
-    whereClause = `"${baseColumn}" ${baseOperator} "${baseValue}"`;
-  }
-  
-  let additionalWhereRows = document.querySelectorAll("#additionalWhereContainer .where-condition");
-  state.additionalWhere = [];
-  additionalWhereRows.forEach(row => {
-    let col = row.querySelector(".where-button span").textContent.trim();
-    let opTxt = row.querySelector(".operator-button span").textContent.trim();
-    let opSym = opMap[opTxt] || "=";
-    let val = row.querySelector(".whereValue").value.trim();
-    let operatorLabelElem = row.querySelector(".where-operator-label");
-    let opLabel = (operatorLabelElem && operatorLabelElem.textContent.trim()) || "AND";
-    state.additionalWhere.push({ column: col, operator: opSym, value: val, logic: opLabel });
-    if (col && col !== "Select columns" && val) {
-      if (whereClause !== "") { whereClause += " " + opLabel + " "; }
-      whereClause += `"${col}" ${opSym} "${val}"`;
-    }
-  });
-  
-  let formattedSQL = "";
-  if (whereClause) {
-    formattedSQL = "SELECT " + selectClause + " FROM df\nWHERE " + whereClause.replace(/ (AND|OR) /g, "\n$1 ");
-  } else {
-    formattedSQL = "SELECT " + selectClause + " FROM df";
-  }
-  state.basicSQL = formattedSQL;
-  const previewEl = document.getElementById("basicSQLPreview");
-  let labelEl = document.getElementById("generatedSQLLabel");
-  if (!labelEl) {
-    labelEl = document.createElement("label");
-    labelEl.id = "generatedSQLLabel";
-    labelEl.textContent = "Generated SQL Statement:";
-    previewEl.parentNode.insertBefore(labelEl, previewEl);
-  }
-  previewEl.innerHTML = "<pre>" + formattedSQL + "</pre>";
 }
 
 // ============================================================
@@ -263,14 +229,14 @@ function addWhereRow(operatorLabel, e, rowData = null) {
   groupDiv.innerHTML = `
     <label class="where-operator-label">${savedLogic}</label>
     <div class="custom-dropdown where-dropdown">
-      <button id="whereButton_${index}" class="where-button" aria-haspopup="true" aria-expanded="false">
-        <span id="whereDisplay_${index}">${savedColumn}</span>
+      <button id="additionalWhereButton_${index}" class="where-button" aria-haspopup="true" aria-expanded="false">
+        <span id="additionalWhereDisplay_${index}">${savedColumn}</span>
       </button>
-      <div id="whereDropdownMenu_${index}" class="where-dropdown-menu"></div>
+      <div id="additionalWhereDropdownMenu_${index}" class="where-dropdown-menu"></div>
     </div>
     <div class="custom-dropdown operator-dropdown">
-      <button id="operatorButton_${index}" class="operator-button" aria-haspopup="true" aria-expanded="false">
-        <span id="operatorDisplay_${index}">${savedOperator}</span>
+      <button id="additionalOperatorButton_${index}" class="operator-button" aria-haspopup="true" aria-expanded="false">
+        <span id="additionalOperatorDisplay_${index}">${savedOperator}</span>
       </button>
       <div class="operator-dropdown-menu">
         <div class="operator-option" data-value="=">
@@ -284,7 +250,7 @@ function addWhereRow(operatorLabel, e, rowData = null) {
         </div>
       </div>
     </div>
-    <input type="text" class="whereValue" id="whereValue_${index}" placeholder="e.g. BAT1" value="${savedValue}">
+    <input type="text" class="whereValue" id="additionalWhereValue_${index}" placeholder="e.g. BAT1" value="${savedValue}">
     <button class="remove-where-btn" title="Remove condition">
       <i class="fas fa-times-circle"></i>
     </button>
@@ -299,19 +265,19 @@ function addWhereRow(operatorLabel, e, rowData = null) {
 
   container.appendChild(groupDiv);
 
-  const extraWhereButton = groupDiv.querySelector(`#whereButton_${index}`);
+  const extraWhereButton = groupDiv.querySelector(`#additionalWhereButton_${index}`);
   extraWhereButton.addEventListener("click", function (e) {
     e.stopPropagation();
-    const dropdown = groupDiv.querySelector(`#whereDropdownMenu_${index}`);
+    const dropdown = groupDiv.querySelector(`#additionalWhereDropdownMenu_${index}`);
     dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
   });
 
   document.addEventListener("click", function () {
-    const dd = document.getElementById(`whereDropdownMenu_${index}`);
+    const dd = document.getElementById(`additionalWhereDropdownMenu_${index}`);
     if (dd) dd.style.display = "none";
   });
 
-  const operatorBtn = groupDiv.querySelector(`#operatorButton_${index}`);
+  const operatorBtn = groupDiv.querySelector(`#additionalOperatorButton_${index}`);
   operatorBtn.addEventListener("click", function (e) {
     e.stopPropagation();
     const dropdownMenu = groupDiv.querySelector(".operator-dropdown-menu");
@@ -324,7 +290,7 @@ function addWhereRow(operatorLabel, e, rowData = null) {
   groupDiv.querySelectorAll(".operator-option").forEach(function (option) {
     option.addEventListener("click", function () {
       const text = option.querySelector(".operator-name").textContent;
-      groupDiv.querySelector(`#operatorDisplay_${index}`).textContent = text;
+      groupDiv.querySelector(`#additionalOperatorDisplay_${index}`).textContent = text;
       groupDiv.querySelector(".operator-dropdown-menu").style.display = "none";
       operatorBtn.setAttribute("aria-expanded", "false");
       updateSQLFromBasic();
@@ -337,11 +303,11 @@ function addWhereRow(operatorLabel, e, rowData = null) {
     updateSQLFromBasic();
   });
 
-  let additWhereMenu = document.getElementById(`whereDropdownMenu_${index}`);
+  let additWhereMenu = document.getElementById(`additionalWhereDropdownMenu_${index}`);
   addDropdownSearch(additWhereMenu, "dropdown-search", "where-option");
-  addClearOption(additWhereMenu, "where-option", `whereButton_${index}`);
+  addClearOption(additWhereMenu, "where-option", `additionalWhereButton_${index}`);
   let cols = getParentColumns(selectedBox.id);
-  populateDropdown(additWhereMenu, cols, "where-option", `whereButton_${index}`);
+  populateDropdown(additWhereMenu, cols, "where-option", `additionalWhereButton_${index}`);
   updateSQLFromBasic();
 }
 
@@ -354,11 +320,11 @@ function addYRow(e, rowData = null) {
   
   // For additional Y rows, add entries beyond the base field.
   const yContainer = document.getElementById("ySelectContainer");
-  const yValuesWrapper = yContainer.querySelector(".y-values-wrapper");
-  let newIndex = yValuesWrapper.querySelectorAll(".y-select-group").length + 1; // newIndex ≥ 2
+  const yValuesWrapper = yContainer;
+  let newIndex = yValuesWrapper.querySelectorAll(".form-group").length + 1;
   const savedValue = rowData && rowData.value ? rowData.value : "";
   const groupDiv = document.createElement("div");
-  groupDiv.className = "form-group y-select-group";
+  groupDiv.className = "form-group";
   groupDiv.innerHTML = `
     <label for="ySelectDisplay_${newIndex}">Y Values:</label>
     <div class="plot-row">
@@ -375,8 +341,6 @@ function addYRow(e, rowData = null) {
 
   yValuesWrapper.appendChild(groupDiv);
   
-  updatePlotDropdowns(selectedBox.id);
-
   const extraButton = groupDiv.querySelector(`#ySelectButton_${newIndex}`);
   extraButton.addEventListener("click", function(e) {
     e.stopPropagation();
@@ -397,18 +361,20 @@ function addYRow(e, rowData = null) {
       let val = btn.dataset.selected || btn.querySelector("span").textContent.trim();
       if(val && val !== "Select a column") newYFields.push(val);
     });
-    boxState[selectedBox.id].yFields = newYFields;
+    boxState[selectedBox.id].additionalYFields = newYFields;
   });
 
+  // Create dropdown features
   let menu = document.getElementById(`ySelectDropdownMenu_${newIndex}`);
   addDropdownSearch(menu, "dropdown-search", "plot-option");
   addClearOption(menu, "plot-option", `ySelectButton_${newIndex}`);
   let cols = getParentColumns(selectedBox.id);
+  
   populateDropdown(menu, cols, "plot-option", `ySelectButton_${newIndex}`, function(selectedOption) {
     extraButton.dataset.selected = selectedOption;
     state = boxState[selectedBox.id];
-    if (!state.yFields) { state.yFields = []; }
-    state.yFields[newIndex - 1] = selectedOption;
+    if (!state.additionalYFields) { state.additionalYFields = []; }
+    state.additionalYFields[newIndex - 1] = selectedOption;
   });
 }
 
@@ -499,14 +465,14 @@ function runQuery() {
       } else {
         selectClause = selectClause.split(",").map(col => `"${col.trim()}"`).join(", ");
       }
-      let whereClause = "";
-      let baseColumn = document.getElementById("whereDisplay").textContent.trim();
+      let whereClauseCombined = "";
+      let whereClause = document.getElementById("whereDisplay").textContent.trim();
       let opText = document.getElementById("operatorDisplay").textContent.trim();
       const opMap = { "=": "=", "<": "<", ">": ">" }; 
-      let baseOperator = opMap[opText] || "=";
-      let baseValue = document.getElementById("whereValue").value.trim();
-      if (baseColumn && baseColumn !== "Select columns" && baseValue) {
-        whereClause = `"${baseColumn}" ${baseOperator} "${baseValue}"`;
+      let whereOperator = opMap[opText] || "=";
+      let whereValue = document.getElementById("whereValue").value.trim();
+      if (whereClause && whereClause !== "Select columns" && whereValue) {
+        whereClause = `"${whereClause}" ${whereOperator} "${whereValue}"`;
       }
       document.querySelectorAll("#additionalWhereContainer .where-condition").forEach(cond => {
         let col = cond.querySelector(".where-button span").textContent.trim();
@@ -516,13 +482,13 @@ function runQuery() {
         let operatorLabelElem = cond.querySelector(".where-operator-label");
         let opLabel = (operatorLabelElem && operatorLabelElem.textContent.trim()) || "AND";
         if (col && col !== "Select columns" && val) {
-          if (whereClause !== "") { whereClause += " " + opLabel + " "; }
-          whereClause += `"${col}" ${opSym} "${val}"`;
+          if (whereClauseCombined !== "") { whereClauseCombined += " " + opLabel + " "; }
+          whereClauseCombined += `"${col}" ${opSym} "${val}"`;
         }
       });
       let sql = "";
-      if (whereClause) {
-        sql = "SELECT " + selectClause + " FROM df\nWHERE " + whereClause.replace(/ (AND|OR) /g, "\n$1 ");
+      if (whereClauseCombined) {
+        sql = "SELECT " + selectClause + " FROM df\nWHERE " + whereClauseCombined.replace(/ (AND|OR) /g, "\n$1 ");
       } else {
         sql = "SELECT " + selectClause + " FROM df";
       }
@@ -585,23 +551,27 @@ function runQuery() {
   } else if (selectedBox.dataset.type === "plot") {
     let xButton = document.getElementById("xSelectButton");
     let xField = xButton.dataset.selected || xButton.querySelector("span").textContent.trim();
-    let yFields = [];
-    let baseY = document.getElementById("ySelectButton_1").dataset.selected ||
-                document.getElementById("ySelectButton_1").querySelector("span").textContent.trim();
-    if (baseY && baseY !== "Select a column") { yFields.push(baseY); }
-    let additionalY = document.querySelectorAll("#ySelectContainer .y-select-group");
-    additionalY.forEach((group, idx) => {
-      if (idx === 0) return; // Skip the base row
+    let yButton = document.getElementById("ySelectButton");
+    let yField = yButton.dataset.selected || yButton.querySelector("span").textContent.trim();
+
+    let additionalYFields = [];
+    let additionalY = document.querySelectorAll("#ySelectContainer .form-group");
+    additionalY.forEach((group) => {
       let val = group.querySelector("button").dataset.selected || group.querySelector("button span").textContent.trim();
-      if (val && val !== "Select a column") { yFields.push(val); }
+      if (val && val !== "Select a column") { 
+        additionalYFields.push(val); 
+      }
     });
-    if (!xField || xField === "Select a column" || yFields.length === 0) {
+
+    if (!xField || xField === "Select a column" || !yField || yField === "Select a column") {
       alert("Please select an X field and at least one Y value.");
       setRunButtonLoading(false);
       return;
     }
+
     state.xField = xField;
-    state.yFields = yFields;
+    state.yField = yField;
+    state.additionalYFields = additionalYFields;
     let parentState = boxState[state.parent];
     if (!parentState || !parentState.data) {
       setTimeout(() => { runQuery(); }, 1500);
@@ -610,7 +580,11 @@ function runQuery() {
     let rawData = parentState.data;
     const colorPalette = ['#00008B', '#FF0000', '#008000', '#800080', '#FFA500',
                           '#00CED1', '#DC143C', '#006400', '#8B008B', '#FF1493'];
-    let datasets = yFields.map((yField, index) => {
+
+    // Combine the primary yField with additionalYFields into a single array.
+    let allYFields = [yField, ...additionalYFields];
+
+    let datasets = allYFields.map((yField, index) => {
       let chartData = rawData.map(item => ({
         x: parseFloat(item[xField]),
         y: parseFloat(item[yField])
@@ -651,7 +625,7 @@ function runQuery() {
     let leftVal = document.getElementById("leftJoinColumnButton").dataset.selected || "";
     let rightVal = document.getElementById("rightJoinColumnButton").dataset.selected || "";
     const joinTypeMap = {
-      "Left Join": "left  ",
+      "Left Join": "left",
       "Right Join": "right",
       "Inner Join": "inner",
       "Outer Join": "outer",
@@ -729,9 +703,9 @@ function createBox(title, type, parentId = null, configState = null) {
         advancedSQL: "SELECT * FROM df",
         sqlMode: "basic",
         selectClause: "",
-        baseColumn: "",
-        baseOperator: "=",
-        baseValue: "",
+        whereClause: "",
+        whereOperator: "=",
+        whereValue: "",
         additionalWhere: []
       };
     } else if (type === "join") {
@@ -740,7 +714,7 @@ function createBox(title, type, parentId = null, configState = null) {
       boxState[box.id] = { code: "Run to show available tables", header: "Results: InfluxDB" };
     } else if (type === "plot") {
       // For plot boxes, do not preinitialize a removable base Y field.
-      boxState[box.id] = { xField: "", yFields: [], chartConfig: null, result: "" };
+      boxState[box.id] = { xField: "", yField: "", additionalYFields: [], chartConfig: null, result: "" };
     }
   }
   
@@ -794,7 +768,7 @@ function createBox(title, type, parentId = null, configState = null) {
     case "join":
       boxTitle = title || "Join " + joinCounter;
       joinCounter++;
-      boxState[box.id].joinType = boxState[box.id].joinType || "Inner";
+      boxState[box.id].joinType = boxState[box.id].joinType || "Left Join";
       boxState[box.id].leftJoinColumn = "";
       boxState[box.id].rightJoinColumn = "";
       boxState[box.id].header = `Results: Join ${joinCounter - 1}`;
@@ -1003,18 +977,31 @@ function selectBox(box) {
     updateDropdownMenu("tableDropdownMenu", "tableQueryButton", "dropdown-search", "table-option", measurementsData, function(selectedOption) {
       state.table = selectedOption;
     });
-    document.getElementById("tableQueryDisplay").textContent = state.table || "Select a table";
-    document.getElementById("startTime").value = state.start_time || "";
-    document.getElementById("endTime").value = state.end_time || "";
+    document.getElementById("tableQueryDisplay").textContent = state.table || "batspk__4_2_0__ethernet__65400";
+    document.getElementById("startTime").value = state.start_time || "2024-07-25T16:47:00Z";
+    document.getElementById("endTime").value = state.end_time || "2024-07-25T16:47:10Z";
   } else if (box.dataset.type === "sql") {
+
+    // Show sqlEditor
     panels.sqlEditor.style.display = "block";
-    // Ensure default values are set if not already stored
-    state.selectClause = state.selectClause || "";
-    state.baseColumn = state.baseColumn || "";
-    state.baseOperator = state.baseOperator || "=";
-    state.baseValue = state.baseValue || "";
-    state.additionalWhere = state.additionalWhere || [];
+
+    // Reset the UI to defaults first
+    document.getElementById("selectDisplay").textContent = state.selectClause || "Select columns";
+    document.getElementById("whereDisplay").textContent = state.whereClause || "Select columns";
+    document.getElementById("operatorDisplay").textContent = state.whereOperator || "=";
+    document.getElementById("whereValue").value = state.whereValue || "";
+    state.additionalYFields = Array.isArray(state.additionalWhere) ? state.additionalWhere : [];
+    const whereContainer = document.getElementById("additionalWhereContainer")
+
+    if (whereContainer) {
+      whereContainer.innerHTML = "";
+      state.additionalWhere.forEach(rowData => {
+        addWhereRow(rowData.logic, null, rowData);
+      })
+    }
+    // Continue with your existing logic to update dropdowns and rebuild additional WHERE rows
     updateTransformDropdowns(boxId);
+    // Recall sql mode
     state.sqlMode = state.sqlMode || "basic";
     if (state.sqlMode === "basic") {
       document.getElementById("sqlBasicEditor").style.display = "block";
@@ -1027,113 +1014,71 @@ function selectBox(box) {
       document.getElementById("toggleAdvanced").textContent = "Basic";
       sqlEditorCM.setValue(state.advancedSQL || "SELECT * FROM df");
     }
-    document.getElementById("selectDisplay").textContent = state.selectClause || "Select columns";
-    document.getElementById("whereDisplay").textContent = state.baseColumn || "Select columns";
-    document.getElementById("operatorDisplay").textContent = state.baseOperator || "=";
-    document.getElementById("whereValue").value = state.baseValue || "";
-    // Rebuild additional WHERE rows from state
-    const additionalContainer = document.getElementById("additionalWhereContainer");
-    additionalContainer.innerHTML = "";
-    if (state.additionalWhere.length > 0) {
-      state.additionalWhere.forEach(rowData => {
-        addWhereRow(rowData.logic, null, rowData);
-      });
-    }
   } else if (box.dataset.type === "plot") {
-    panels.plotForm.style.display = "block";
-    updatePlotDropdowns(boxId);
-    if (!state.yFields || state.yFields.length === 0) {
-      state.yFields = [""];
-    }
-    const yContainer = document.getElementById("ySelectContainer");
-    const yValuesWrapper = yContainer.querySelector(".y-values-wrapper");
-    yValuesWrapper.innerHTML = "";
-    // Rebuild Y field rows
-    {
-      // Base Y field row
-      let baseY = state.yFields[0] || "";
-      let groupDiv = document.createElement("div");
-      groupDiv.className = "form-group y-select-group";
-      groupDiv.innerHTML = `
-          <label for="ySelectDisplay_1">Y Values:</label>
-          <div class="plot-row">
-            <div class="custom-dropdown plot-dropdown">
-              <button id="ySelectButton_1" aria-haspopup="true" aria-expanded="false" data-selected="${baseY}">
-                <span id="ySelectDisplay_1">${baseY || "Select a column"}</span>
-              </button>
-              <div class="plot-dropdown-menu" id="ySelectDropdownMenu_1"></div>
-            </div>
-          </div>`;
-      yValuesWrapper.appendChild(groupDiv);
-      let baseButton = groupDiv.querySelector("#ySelectButton_1");
-      baseButton.addEventListener("click", function(e) {
-         e.stopPropagation();
-         const menu = groupDiv.querySelector("#ySelectDropdownMenu_1");
-         menu.style.display = menu.style.display === "block" ? "none" : "block";
-      });
-      document.addEventListener("click", function() {
-         const dd = document.getElementById("ySelectDropdownMenu_1");
-         if (dd) dd.style.display = "none";
-      });
-      let baseMenu = document.getElementById("ySelectDropdownMenu_1");
-      addDropdownSearch(baseMenu, "dropdown-search", "plot-option");
-      populateDropdown(baseMenu, getParentColumns(selectedBox.id), "plot-option", "ySelectButton_1", function(selectedOption) {
-         baseButton.dataset.selected = selectedOption;
-         state.yFields[0] = selectedOption;
-      });
-    }
-    // Additional Y field rows
-    for (let i = 1; i < state.yFields.length; i++) {
-      let yVal = state.yFields[i] || "";
-      let newIndex = i + 1;
-      let groupDiv = document.createElement("div");
-      groupDiv.className = "form-group y-select-group";
-      groupDiv.innerHTML = `
-          <label for="ySelectDisplay_${newIndex}">Y Values:</label>
-          <div class="plot-row">
-            <div class="custom-dropdown plot-dropdown">
-              <button id="ySelectButton_${newIndex}" aria-haspopup="true" aria-expanded="false" data-selected="${yVal}">
-                <span id="ySelectDisplay_${newIndex}">${yVal || "Select a column"}</span>
-              </button>
-              <div class="plot-dropdown-menu" id="ySelectDropdownMenu_${newIndex}"></div>
-            </div>
-            <button class="remove-y-btn" title="Remove Y Value">
-              <i class="fas fa-times-circle"></i>
-            </button>
-          </div>`;
-      yValuesWrapper.appendChild(groupDiv);
-      let extraButton = groupDiv.querySelector(`#ySelectButton_${newIndex}`);
-      extraButton.addEventListener("click", function(e) {
-         e.stopPropagation();
-         const menu = groupDiv.querySelector(`#ySelectDropdownMenu_${newIndex}`);
-         menu.style.display = menu.style.display === "block" ? "none" : "block";
-      });
-      document.addEventListener("click", function(){
-         const dd = document.getElementById(`ySelectDropdownMenu_${newIndex}`);
-         if (dd) dd.style.display = "none";
-      });
-      groupDiv.querySelector(".remove-y-btn").addEventListener("click", function(e) {
-         e.preventDefault();
-         groupDiv.remove();
-         let newYFields = [];
-         yValuesWrapper.querySelectorAll(".custom-dropdown button").forEach(btn => {
-           let val = btn.dataset.selected || btn.querySelector("span").textContent.trim();
-           if (val && val !== "Select a column") newYFields.push(val);
-         });
-         state.yFields = newYFields;
-      });
-      let menu = document.getElementById(`ySelectDropdownMenu_${newIndex}`);
-      addDropdownSearch(menu, "dropdown-search", "plot-option");
-      addClearOption(menu, "plot-option", `ySelectButton_${newIndex}`);
-      let cols = getParentColumns(selectedBox.id);
-      populateDropdown(menu, cols, "plot-option", `ySelectButton_${newIndex}`, function(selectedOption) {
-         extraButton.dataset.selected = selectedOption;
-         state.yFields[newIndex - 1] = selectedOption;
-      });
-    }
-    document.getElementById("tableContainer").innerHTML = state.result || "";
-    if (state.chartConfig) { renderChart(state.chartConfig); }
-    document.getElementById("xSelectDisplay").textContent = state.xField || "Select a column";
+      panels.plotForm.style.display = "block";
+      document.getElementById("xSelectDisplay").textContent = state.xField || "Select a column";
+      document.getElementById("ySelectDisplay").textContent = state.yField || "Select a column";
+      state.additionalYFields = Array.isArray(state.additionalYFields) ? state.additionalYFields : [];
+      const yContainer = document.getElementById("ySelectContainer");
+      if (yContainer) {
+          yContainer.innerHTML = "";
+          state.additionalYFields.forEach((yVal, i) => {
+              const index = i;
+              const groupDiv = document.createElement("div");
+              groupDiv.className = "form-group";
+              groupDiv.innerHTML = `
+                  <label for="ySelectDisplay_${index}">Y Values:</label>
+                  <div class="plot-row">
+                      <div class="custom-dropdown plot-dropdown">
+                          <button id="ySelectButton_${index}" data-selected="${yVal || ''}">
+                              <span id="ySelectDisplay_${index}">${yVal || "Select a column"}</span>
+                          </button>
+                          <div class="plot-dropdown-menu" id="ySelectDropdownMenu_${index}"></div>
+                      </div>
+                      <button class="remove-y-btn"><i class="fas fa-times-circle"></i></button>
+                  </div>
+              `;
+              yContainer.appendChild(groupDiv);
+  
+              let extraButton = groupDiv.querySelector(`#ySelectButton_${index}`);
+              extraButton.addEventListener("click", function(e) {
+                  e.stopPropagation();
+                  const menu = groupDiv.querySelector(`#ySelectDropdownMenu_${index}`);
+                  menu.style.display = menu.style.display === "block" ? "none" : "block";
+              });
+  
+              document.addEventListener("click", function() {
+                  const dd = document.getElementById(`ySelectDropdownMenu_${index}`);
+                  if (dd) dd.style.display = "none";
+              });
+  
+              groupDiv.querySelector(".remove-y-btn").addEventListener("click", function(e) {
+                  e.preventDefault();
+                  groupDiv.remove();
+                  let newYFields = [];
+                  yContainer.querySelectorAll(".custom-dropdown button").forEach(btn => {
+                      let val = btn.dataset.selected || btn.querySelector("span").textContent.trim();
+                      if (val && val !== "Select a column") newYFields.push(val);
+                  });
+                  state.additionalYFields = newYFields;
+              });
+  
+              let menu = document.getElementById(`ySelectDropdownMenu_${index}`);
+              addDropdownSearch(menu, "dropdown-search", "plot-option");
+              addClearOption(menu, "plot-option", `ySelectButton_${index}`);
+              let cols = getParentColumns(selectedBox.id);
+              populateDropdown(menu, cols, "plot-option", `ySelectButton_${index}`, function(selectedOption) {
+                  extraButton.dataset.selected = selectedOption;
+                  state.additionalYFields[i-1] = selectedOption;
+              });
+          });
+          updatePlotDropdowns(boxId);
+          console.log('UI values:', {
+              x: document.getElementById("xSelectDisplay").textContent,
+              y: document.getElementById("ySelectDisplay").textContent,
+              additional: Array.from(yContainer.querySelectorAll(".form-group button span")).map(span => span.textContent)
+          });
+      }
   } else if (box.dataset.type === "join") {
     panels.joinForm.style.display = "block";
     updateJoinDropdowns(box.id);
@@ -1141,7 +1086,6 @@ function selectBox(box) {
     document.getElementById("leftJoinColumnDisplay").textContent = state.leftJoinColumn || "Select column";
     document.getElementById("rightJoinColumnDisplay").textContent = state.rightJoinColumn || "Select column";
   }
-  
   if (box.dataset.type !== "plot") {
     document.getElementById("tableContainer").innerHTML = state.result || "";
   }
@@ -1206,17 +1150,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   setupDropdownToggle(
-    ["tableQueryButton", "xSelectButton", "ySelectButton_1", "selectButton", "whereButton", "joinTypeButton", "leftJoinColumnButton", "rightJoinColumnButton"],
-    ["tableDropdownMenu", "xSelectDropdownMenu", "ySelectDropdownMenu_1", "selectDropdownMenu", "whereDropdownMenu", "joinTypeDropdownMenu", "leftJoinDropdownMenu", "rightJoinDropdownMenu"]
+    ["tableQueryButton", "xSelectButton", "ySelectButton", "selectButton", "whereButton", "joinTypeButton", "leftJoinColumnButton", "rightJoinColumnButton"],
+    ["tableDropdownMenu", "xSelectDropdownMenu", "ySelectDropdownMenu", "selectDropdownMenu", "whereDropdownMenu", "joinTypeDropdownMenu", "leftJoinDropdownMenu", "rightJoinDropdownMenu"]
   );
   
-  let condCount = 5;
-  for (let index = 0; index < condCount; index++) {
-    const buttonId = `additionalWhereButton_${index}`;
-    const menuId = `whereDropdownMenu_${index}`;
-    setupDropdownToggle([buttonId], [menuId]);
-  }
-
   document.addEventListener("click", function(e) {
     const opButton = document.getElementById("operatorButton");
     const opMenu = document.querySelector(".operator-dropdown-menu");

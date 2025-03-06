@@ -149,7 +149,7 @@ body.dark-mode {
 }
 
 /* Left terminal run button */
-#runButton {
+/* #runButton {
   background: none;
   border: none;
   color: var(--primary-color);
@@ -167,7 +167,7 @@ body.dark-mode {
 }
 #runButton:hover svg {
   fill: var(--primary-hover);
-}
+} */
 
 /* Right Terminal */
 #rightTerminal {
@@ -204,7 +204,7 @@ body.dark-mode {
   background: none;
   border: none;
   color: var(--primary-color);
-  font-size: 12px;
+  border-radius: 10px;
   cursor: pointer;
   padding: 5px;
   margin-left: 5px;
@@ -215,11 +215,12 @@ body.dark-mode {
 
 .header-buttons button svg {
   fill: var(--primary-color);
-  transition: fill 0.1s ease;
+  transition: fill 0.1s ease, background-color 0.1s ease;
 }
 
 .header-buttons button:hover svg {
   fill: var(--primary-hover);
+  /* background: var(--primary-hover); */
 }
 
 /* Table container */
@@ -267,8 +268,6 @@ body.dark-mode {
 }
 
 /* Input fields and dropdowns */
-
-
 .text-input-field,
 .whereValue {
   font-family: 'Inter', sans-serif;
@@ -432,7 +431,6 @@ select::placeholder {
 .plot-row {
   display: inline-flex;
   align-items: center;
-  padding: 5px;
 }
 
 /*---------------------------------------------------------------------------- 
@@ -513,12 +511,12 @@ select::placeholder {
 .query-btn,
 .minus-btn {
   position: absolute;
-  width:20px;
-  height: 20px;
+  width:25px;
+  height: 25px;
   background: transparent;
   color: var(--primary-color);
   border: none;
-  border-radius: 0px;
+  border-radius: 4px;
   font-size: 13px;
   cursor: pointer;
   display: flex;
@@ -529,8 +527,10 @@ select::placeholder {
 
 .box button i {
   color: var(--primary-color);
-  border-radius: 0px;
+  border-radius: 4px;
   background: transparent;
+  width:25px;
+  height: 25px;
   position: absolute;
   border: none;
   cursor: pointer;
@@ -628,8 +628,8 @@ select::placeholder {
 
 .remove-where-btn,
 .remove-y-btn {
-  background: var(--primary-color);
-  color: var(--background-light);
+  background: transparent; /* var(--primary-color); */
+  color: var(--primary-color);
   border: none;
   border-radius: 25%;
   width: 20px;
@@ -644,12 +644,24 @@ select::placeholder {
   margin-left: 5px;
 }
 
-.remove-y-btn svg {
+.remove-where-btn i,
+.remove-y-btn i {
   width: 12px;
   height: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: color 0.1s ease;
+}
+
+/* .remove-where-btn:hover,
+.remove-y-btn:hover {
+  background-color: var(--primary-hover);
+} */
+
+.remove-where-btn i:hover,
+.remove-y-btn i:hover {
+  color: var(--primary-hover);
 }
 
 .import-basic-btn {
@@ -668,8 +680,6 @@ select::placeholder {
 .minus-btn:hover, */
 .inline-plus-btn:hover,
 .and-or-btn:hover,
-.remove-where-btn:hover,
-.remove-y-btn:hover,
 .advanced-btn:hover,
 .import-basic-btn:hover {
   background-color: var(--primary-hover);

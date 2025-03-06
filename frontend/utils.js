@@ -435,7 +435,7 @@ function saveConfig() {
       } else if (box.dataset.type === "sql") {
         runArgs = { basicSQL: state.basicSQL || "", advancedSQL: state.advancedSQL || "", parent: state.parent || null, sqlMode: state.sqlMode || "basic" };
       } else if (box.dataset.type === "plot") {
-        runArgs = { xField: state.xField || "", yFields: state.yFields || [], parent: state.parent || null };
+        runArgs = { xField: state.xField || "", yField: state.yField || "", additionalYFields: state.additionalYFields || [], parent: state.parent || null };
       } else if (box.dataset.type === "join") {
         runArgs = { joinType: state.joinType || "", leftJoinColumn: state.leftJoinColumn || "", rightJoinColumn: state.rightJoinColumn || "", leftParent: state.leftParent || null, rightParent: state.rightJoinColumn || null };
       }
@@ -516,34 +516,41 @@ function updateSQLFromBasic() {
   } else {
     selectClause = selectClause.split(",").map(col => `"${col.trim()}"`).join(", ");
   }
-  let baseColumn = document.getElementById("whereDisplay").textContent.trim();
+
+  let whereClause = document.getElementById("whereDisplay").textContent.trim();
   let opText = document.getElementById("operatorDisplay").textContent.trim();
   const opMap = { "=": "=", "<": "<", ">": ">" };
-  let baseOperator = opMap[opText] || "=";
-  let baseValue = document.getElementById("whereValue").value.trim();
-  state.baseColumn = baseColumn;
-  state.baseOperator = baseOperator;
-  state.baseValue = baseValue;
-  let whereClause = "";
-  if (baseColumn && baseColumn !== "Select columns" && baseValue) {
-    whereClause = `"${baseColumn}" ${baseOperator} "${baseValue}"`;
+  let whereOperator = opMap[opText] || "=";
+  let whereValue = document.getElementById("whereValue").value.trim();
+
+  state.whereClause = whereClause;
+  state.whereOperator = whereOperator;
+  state.whereValue = whereValue;
+
+  let whereClauseCombined = "";
+  if (whereClause && whereClause !== "Select columns" && whereValue) {
+    whereClauseCombined = `"${whereClause}" ${whereOperator} "${whereValue}"`;
   }
-  document.querySelectorAll("#additionalWhereContainer .where-condition").forEach(cond => {
-    let col = cond.querySelector(".where-button span").textContent.trim();
-    let opTxt = cond.querySelector(".operator-button span").textContent.trim();
+
+  let additionalWhereRows = document.querySelectorAll("#additionalWhereContainer .where-condition");
+  state.additionalWhere = [];
+  additionalWhereRows.forEach(row => {
+    let col = row.querySelector(".where-button span").textContent.trim();
+    let opTxt = row.querySelector(".operator-button span").textContent.trim();
     let opSym = opMap[opTxt] || "=";
-    let val = cond.querySelector(".whereValue").value.trim();
-    let operatorLabelElem = cond.querySelector(".where-operator-label");
+    let val = row.querySelector(".whereValue").value.trim();
+    let operatorLabelElem = row.querySelector(".where-operator-label");
     let opLabel = (operatorLabelElem && operatorLabelElem.textContent.trim()) || "AND";
     state.additionalWhere.push({ column: col, operator: opSym, value: val, logic: opLabel });
     if (col && col !== "Select columns" && val) {
-      if (whereClause !== "") { whereClause += " " + opLabel + " "; }
-      whereClause += `"${col}" ${opSym} "${val}"`;
+      if (whereClauseCombined !== "") { whereClauseCombined += " " + opLabel + " "; }
+      whereClauseCombined += `"${col}" ${opSym} "${val}"`;
     }
   });
+
   let formattedSQL = "";
-  if (whereClause) {
-    formattedSQL = "SELECT " + selectClause + " FROM df\nWHERE " + whereClause.replace(/ (AND|OR) /g, "\n$1 ");
+  if (whereClauseCombined) {
+    formattedSQL = "SELECT " + selectClause + " FROM df\nWHERE " + whereClauseCombined.replace(/ (AND|OR) /g, "\n$1 ");
   } else {
     formattedSQL = "SELECT " + selectClause + " FROM df";
   }
