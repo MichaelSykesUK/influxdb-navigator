@@ -79,6 +79,8 @@ async def query_table_endpoint(query_params: QueryParams):
         )
         table, df = query_tools.query_table_with_retries(
             client, query_params.table, query_params.start_time, query_params.end_time)
+        if "time" in df.columns:
+            df["time_ns"] = df["time"].view("int64")
         dict_data = [OrderedDict((col, row[col])
                                  for col in df.columns) for _, row in df.iterrows()]
         return {"data": dict_data, "columns": list(df.columns)}

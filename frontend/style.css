@@ -148,27 +148,6 @@ body.dark-mode {
   padding: 4px;
 }
 
-/* Left terminal run button */
-/* #runButton {
-  background: none;
-  border: none;
-  color: var(--primary-color);
-  font-size: 12px;
-  cursor: pointer;
-  padding: 0;
-  margin-left: 5px;
-  display: flex;
-  align-items: center;
-  transition: color 0.1s ease, background-color 0.1s ease;
-}
-
-#runButton svg {
-  fill: var(--primary-color);
-}
-#runButton:hover svg {
-  fill: var(--primary-hover);
-} */
-
 /* Right Terminal */
 #rightTerminal {
   width: 70%;
@@ -220,7 +199,6 @@ body.dark-mode {
 
 .header-buttons button:hover svg {
   fill: var(--primary-hover);
-  /* background: var(--primary-hover); */
 }
 
 /* Table container */
@@ -511,8 +489,8 @@ select::placeholder {
 .query-btn,
 .minus-btn {
   position: absolute;
-  width:25px;
-  height: 25px;
+  width:23px;
+  height: 23px;
   background: transparent;
   color: var(--primary-color);
   border: none;
@@ -529,8 +507,8 @@ select::placeholder {
   color: var(--primary-color);
   border-radius: 4px;
   background: transparent;
-  width:25px;
-  height: 25px;
+  width:23px;
+  height: 23px;
   position: absolute;
   border: none;
   cursor: pointer;
@@ -542,7 +520,6 @@ select::placeholder {
 
 .box button i:hover {
   color: var(--primary-hover);
-  /* background: var(--primary-hover); */
 }
 
 /* Box Button positions */
@@ -569,13 +546,9 @@ select::placeholder {
 
 /* Active state for join button */
 .join-btn.active {
-  background: #c00000;
+  background: #ff1515;
   animation: pulsate 1s infinite;
 }
-
-/* body.dark-mode .box button i {
-  color: white;
-} */
 
 .advanced-btn,
 .import-basic-btn {
@@ -654,11 +627,6 @@ select::placeholder {
   transition: color 0.1s ease;
 }
 
-/* .remove-where-btn:hover,
-.remove-y-btn:hover {
-  background-color: var(--primary-hover);
-} */
-
 .remove-where-btn i:hover,
 .remove-y-btn i:hover {
   color: var(--primary-hover);
@@ -673,11 +641,6 @@ select::placeholder {
   display: inline-block;
 }
 
-/* .plot-btn:hover,
-.transform-btn:hover,
-.join-btn:hover,
-.query-btn:hover,
-.minus-btn:hover, */
 .inline-plus-btn:hover,
 .and-or-btn:hover,
 .advanced-btn:hover,
@@ -754,7 +717,6 @@ select::placeholder {
   z-index: 5000;
 }
 
-/* Ensure icons are stacked */
 #dark-mode-toggle .icon-container {
   position: relative;
   width: 24px;  /* Adjust based on your icon size */
@@ -765,7 +727,6 @@ select::placeholder {
 }
 
 #dark-mode-toggle:hover {
-  /* background-color: var(--primary-hover); */
   color: var(--primary-hover);
 }
 

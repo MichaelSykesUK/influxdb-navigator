@@ -24,7 +24,6 @@ let transWhereState = {}; // For dynamic additional WHERE rows in SQL boxes.
 // ============================================================
 function toggleDarkMode() {
   document.body.classList.toggle("dark-mode");
-  // (Icon update code commented out)
 }
 
 // ============================================================
@@ -166,9 +165,24 @@ function updatePlotDropdowns(boxId) {
 }
 
 function updateJoinDropdowns(joinBoxId) {
+
   let joinStateObj = boxState[joinBoxId];
   if (!joinStateObj) return;
+  // Check if parent references are set
+  if (!joinStateObj.leftParent || !joinStateObj.rightParent) {
+    console.warn("Join box", joinBoxId, "is missing leftParent or rightParent.");
+    return;
+  }
+  let leftParentState = boxState[joinStateObj.leftParent];
+  let rightParentState = boxState[joinStateObj.rightParent];
+  if (!leftParentState || !leftParentState.data || !rightParentState || !rightParentState.data) {
+    console.warn("Parent data not available yet for join box:", joinBoxId);
+    return;
+  }
+
   let leftJoinMenu = document.getElementById("leftJoinDropdownMenu");
+  let rightJoinMenu = document.getElementById("rightJoinDropdownMenu");
+
   addDropdownSearch(leftJoinMenu, "dropdown-search", "join-option");
   let parentStateLeft = boxState[joinStateObj.leftParent];
   if (parentStateLeft && parentStateLeft.data && parentStateLeft.data.length > 0) {
@@ -177,7 +191,7 @@ function updateJoinDropdowns(joinBoxId) {
       boxState[selectedBox.id].leftJoinColumn = selectedOption;
     });
   }
-  let rightJoinMenu = document.getElementById("rightJoinDropdownMenu");
+  
   addDropdownSearch(rightJoinMenu, "dropdown-search", "join-option");
   let parentStateRight = boxState[joinStateObj.rightParent];
   if (parentStateRight && parentStateRight.data && parentStateRight.data.length > 0) {
@@ -192,7 +206,13 @@ function loadSQLBoxState(boxId) {
   const state = boxState[boxId];
   console.log('Loaded state for', boxId, state);
   if (!state) return;
-  document.getElementById("selectDisplay").textContent = state.selectClause || "Select columns";
+  const selectDisplay = document.getElementById("selectDisplay");
+  if (state.selectClause) {
+    const selectedColumns = state.selectClause.split(", ").map(col => col.trim());
+    selectDisplay.textContent = selectedColumns.join(", ") || "Select columns";
+  } else {
+    selectDisplay.textContent = "Select columns";
+  }
   document.getElementById("whereDisplay").textContent = state.whereClause || "Select columns";
   document.getElementById("operatorDisplay").textContent = state.whereOperator || "=";
   document.getElementById("whereValue").value = state.whereValue || "";
@@ -519,6 +539,7 @@ function runQuery() {
           state.result = document.getElementById("tableContainer").innerHTML;
           state.data = resultArray;
           state.header = document.getElementById("tableHeader").textContent;
+          boxState[selectedBox.id].task_running = false;
           setRunButtonLoading(false);
         })
         .catch(err => {
@@ -572,6 +593,8 @@ function runQuery() {
         additionalYFields.push(val); 
       }
     });
+    
+
 
     if (!xField || xField === "Select a column" || !yField || yField === "Select a column") {
       alert("Please select an X field and at least one Y value.");
@@ -596,10 +619,21 @@ function runQuery() {
     let allYFields = [yField, ...additionalYFields];
 
     let datasets = allYFields.map((yField, index) => {
+      const parseFieldValue = (value, field) => {
+        if (field === "time" || field === "time_x" || field === "time_y") {
+          // Trim fractional seconds to 3 digits (milliseconds)
+          const normalized = value.replace(/(\.\d{3})\d+/, '$1');
+          return new Date(normalized).getTime();
+        } else {
+          return parseFloat(value);
+        }
+      };
+      
       let chartData = rawData.map(item => ({
-        x: parseFloat(item[xField]),
-        y: parseFloat(item[yField])
+        x: parseFieldValue(item[xField], xField),
+        y: parseFieldValue(item[yField], yField)
       }));
+
       return {
         label: yField,
         data: chartData,
@@ -611,20 +645,69 @@ function runQuery() {
         pointRadius: 0
       };
     });
+    
+    let xScaleType = (xField === "time" || xField === "time_x" || xField === "time_y") ? "time" : "linear";
+    let yScaleType = (yField === "time" || yField === "time_x" || yField === "time_y") ? "time" : "linear";
+    
     let config = {
-      type: 'line',
-      data: { datasets: datasets },
-      options: {
-        animation: false,
-        plugins: { legend: { display: true, position: 'top', labels: { font: { size: 12 } } } },
-        scales: {
-          x: { type: 'linear', position: 'bottom', title: { display: true, text: xField, font: { size: 12 } }, ticks: { font: { size: 12 } } },
-          y: { ticks: { font: { size: 12 } } }
-        },
-        responsive: true,
-        maintainAspectRatio: false
-      }
+        type: 'line',
+        data: { datasets: datasets },
+        options: {
+            animation: false,
+            plugins: { 
+                legend: { 
+                    display: true, 
+                    position: 'top', 
+                    labels: { font: { size: 12 } } 
+                } 
+            },
+            scales: {
+                x: { 
+                    type: xScaleType,
+                    position: 'bottom',
+                    title: { display: true, text: xField, font: { size: 12 } },
+                    ticks: { font: { size: 12 } },
+                    ...(xScaleType === "time" ? { 
+                        time: { 
+                            unit: 'millisecond',
+                            tooltipFormat: 'YYYY-MM-DDTHH:mm:ss[Z]',
+                            displayFormats: {
+                                second: 'YYYY-MM-DDTHH:mm:ss[Z]'
+                            }
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return moment(value).format('YYYY-MM-DDTHH:mm:ss[Z]');
+                            }
+                        }                    
+                    } : {})
+                },
+                y: { 
+                    type: yScaleType,
+                    position: 'left', // usually left for y-axis
+                    title: { display: true, text: yField, font: { size: 12 } },
+                    ticks: { font: { size: 12 } },
+                    ...(yScaleType === "time" ? { 
+                        time: { 
+                            unit: 'millisecond',
+                            tooltipFormat: 'YYYY-MM-DDTHH:mm:ss[Z]',
+                            displayFormats: {
+                                second: 'YYYY-MM-DDTHH:mm:ss[Z]'
+                            }
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return moment(value).format('YYYY-MM-DDTHH:mm:ss[Z]');
+                            }
+                        }                    
+                    } : {})
+                }
+            },
+            responsive: true,
+            maintainAspectRatio: false
+        }
     };
+    
     state.chartConfig = config;
     renderChart(config);
     state.result = document.getElementById("tableContainer").innerHTML;
@@ -662,6 +745,7 @@ function runQuery() {
       right_join_column: rightVal,
       join_type: formattedJoinType
     };
+    console.log("Join payload:", payload);
     fetch("http://127.0.0.1:8000/sql_join", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -693,6 +777,7 @@ function runQuery() {
 function createBox(title, type, parentId = null, configState = null) {
   const whiteboard = document.getElementById("whiteboard");
   const box = document.createElement("div");
+  box.dataset.type = type;
   box.className = "box";
   
   let boxTitle = title || "";
@@ -703,6 +788,7 @@ function createBox(title, type, parentId = null, configState = null) {
     box.id = "box-" + boxIdCounter;
     boxIdCounter++;
   }
+  console.log("Box state for", box.id, boxState[box.id]);
   
   if (configState) {
     boxState[box.id] = Object.assign({}, configState);
@@ -723,6 +809,7 @@ function createBox(title, type, parentId = null, configState = null) {
         whereValue: "",
         additionalWhere: []
       };
+      transWhereState[box.id] = 0; // Initialize additional WHERE rows counter
     } else if (type === "join") {
       boxState[box.id] = { joinType: "Left Join", leftJoinColumn: "", rightJoinColumn: "" };
     } else if (type === "influx") {
@@ -745,7 +832,7 @@ function createBox(title, type, parentId = null, configState = null) {
       boxTitle = "Query " + tableQueryCounter;
       tableQueryCounter++;
       boxState[box.id].header = `Results: Query ${tableQueryCounter - 1}`;
-      boxState[box.id].parent = (parentId && document.getElementById(parentId).dataset.type !== "influx") ? parentId : box.id;
+      boxState[box.id].parent = parentId;
       buttonsHTML = `<button class="transform-btn" title="Create SQL Transform">
                         <i class="fas fa-code"></i>
                      </button>
@@ -784,8 +871,8 @@ function createBox(title, type, parentId = null, configState = null) {
       boxTitle = title || "Join " + joinCounter;
       joinCounter++;
       boxState[box.id].joinType = boxState[box.id].joinType || "Left Join";
-      boxState[box.id].leftJoinColumn = "";
-      boxState[box.id].rightJoinColumn = "";
+      boxState[box.id].leftJoinColumn = boxState[box.id].leftJoinColumn || "";
+      boxState[box.id].rightJoinColumn = boxState[box.id].rightJoinColumn || "";
       boxState[box.id].header = `Results: Join ${joinCounter - 1}`;
       buttonsHTML = `<button class="plot-btn" title="Create Plot">
                         <i class="fas fa-chart-line"></i>
@@ -971,6 +1058,20 @@ function selectBox(box) {
   const title = box.querySelector(".box-title").textContent;
   document.getElementById("navigatorHeader").textContent = "Navigator: " + title;
 
+  if (box.classList.contains("join-box")) {
+    document.getElementById("joinTypeDisplay").textContent = state.joinType || "Left Join";
+    document.getElementById("leftJoinColumnDisplay").textContent = state.leftJoinColumn || "Select column";
+    document.getElementById("rightJoinColumnDisplay").textContent = state.rightJoinColumn || "Select column";
+
+    // Add these lines to sync the button's dataset.selected with the loaded state
+    if (state.leftJoinColumn) {
+      document.getElementById("leftJoinColumnButton").dataset.selected = state.leftJoinColumn;
+    }
+    if (state.rightJoinColumn) {
+      document.getElementById("rightJoinColumnButton").dataset.selected = state.rightJoinColumn;
+    }
+  }
+
   // Hide all panels
   const panels = {
     codeEditorText: document.getElementById("codeEditorText"),
@@ -1005,7 +1106,7 @@ function selectBox(box) {
     document.getElementById("whereDisplay").textContent = state.whereClause || "Select columns";
     document.getElementById("operatorDisplay").textContent = state.whereOperator || "=";
     document.getElementById("whereValue").value = state.whereValue || "";
-    state.additionalYFields = Array.isArray(state.additionalWhere) ? state.additionalWhere : [];
+    state.additionalWhere = Array.isArray(state.additionalWhere) ? state.additionalWhere : [];
     const whereContainer = document.getElementById("additionalWhereContainer")
 
     if (whereContainer) {
@@ -1095,11 +1196,25 @@ function selectBox(box) {
           });
       }
   } else if (box.dataset.type === "join") {
+
+    console.log("Setting display for join box", boxId, state);
     panels.joinForm.style.display = "block";
     updateJoinDropdowns(box.id);
     document.getElementById("joinTypeDisplay").textContent = state.joinType || "Left Join";
     document.getElementById("leftJoinColumnDisplay").textContent = state.leftJoinColumn || "Select column";
     document.getElementById("rightJoinColumnDisplay").textContent = state.rightJoinColumn || "Select column";
+
+    // Update the join buttons' dataset and text from state.
+    if (state.leftJoinColumn) {
+      const leftBtn = document.getElementById("leftJoinColumnButton");
+      leftBtn.dataset.selected = state.leftJoinColumn;
+      leftBtn.querySelector("span").textContent = state.leftJoinColumn;
+    }
+    if (state.rightJoinColumn) {
+      const rightBtn = document.getElementById("rightJoinColumnButton");
+      rightBtn.dataset.selected = state.rightJoinColumn;
+      rightBtn.querySelector("span").textContent = state.rightJoinColumn;
+    }
   }
   if (box.dataset.type !== "plot") {
     document.getElementById("tableContainer").innerHTML = state.result || "";
@@ -1229,7 +1344,9 @@ document.addEventListener("DOMContentLoaded", () => {
   sqlEditorCM = CodeMirror.fromTextArea(sqlTextarea, {
     mode: "text/x-sql",
     lineNumbers: false,
+    theme: "default",
     extraKeys: { "Ctrl-Space": "autocomplete" },
+    hintOptions: { tables: {} }, // Populate with table schema for autocompletion if available
     autofocus: false
   });
   sqlEditorCM.on("inputRead", function(cm, change) {

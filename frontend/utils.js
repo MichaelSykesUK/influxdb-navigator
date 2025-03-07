@@ -365,6 +365,8 @@ function deleteBox(box) {
     let idx = boxes.indexOf(b);
     if (idx > -1) boxes.splice(idx, 1);
     if (boxState[b.id]) delete boxState[b.id];
+    if (transWhereState[b.id]) delete transWhereState[b.id];
+    if (plotYState[b.id]) delete plotYState[b.id];
     b.remove();
   });
   updateConnectors();
@@ -423,35 +425,6 @@ function displayTable(dataArray) {
 /*------------------------------------------------------------------------------
    Configuration Save/Load Functions
 ------------------------------------------------------------------------------*/
-// function saveConfig() {
-//   const config = {
-//     boxes: boxes.map(box => {
-//       const state = boxState[box.id] || {};
-//       let runArgs = {};
-//       if (box.dataset.type === "influx") {
-//         runArgs = { code: state.code || "" };
-//       } else if (box.dataset.type === "table") {
-//         runArgs = { table: state.table || "", start_time: state.start_time || "", end_time: state.end_time || "", parent: state.parent || null };
-//       } else if (box.dataset.type === "sql") {
-//         runArgs = { basicSQL: state.basicSQL || "", advancedSQL: state.advancedSQL || "", parent: state.parent || null, sqlMode: state.sqlMode || "basic" };
-//       } else if (box.dataset.type === "plot") {
-//         runArgs = { xField: state.xField || "", yField: state.yField || "", additionalYFields: state.additionalYFields || [], parent: state.parent || null };
-//       } else if (box.dataset.type === "join") {
-//         runArgs = { joinType: state.joinType || "", leftJoinColumn: state.leftJoinColumn || "", rightJoinColumn: state.rightJoinColumn || "", leftParent: state.leftParent || null, rightParent: state.rightJoinColumn || null };
-//       }
-//       return { id: box.id, type: box.dataset.type, title: box.querySelector(".box-title").innerText, runArgs: runArgs, left: box.style.left, top: box.style.top };
-//     }),
-//     counters: { tableQueryCounter, sqlTransformCounter, plotCounter, joinCounter, boxIdCounter }
-//   };
-//   const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json;charset=utf-8;' });
-//   const link = document.createElement("a");
-//   link.href = URL.createObjectURL(blob);
-//   link.download = "config.json";
-//   link.style.display = "none";
-//   document.body.appendChild(link);
-//   link.click();
-//   document.body.removeChild(link);
-// }
 
 function saveConfig() {
   const config = {
@@ -511,6 +484,7 @@ function saveConfig() {
     counters: { tableQueryCounter, sqlTransformCounter, plotCounter, joinCounter, boxIdCounter }
   };
 
+
   const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json;charset=utf-8;' });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -521,132 +495,123 @@ function saveConfig() {
   document.body.removeChild(link);
 }
 
-// function loadConfig(event) {
-//   const file = event.target.files[0];
-//   if (!file) return;
-//   const reader = new FileReader();
-//   reader.onload = function(e) {
-//     try {
-//       const config = JSON.parse(e.target.result);
-//       boxes.forEach(box => box.remove());
-//       boxes = [];
-//       connectors.forEach(conn => conn.line.remove());
-//       connectors = [];
-//       boxState = {};
-//       tableQueryCounter = config.counters.tableQueryCounter;
-//       sqlTransformCounter = config.counters.sqlTransformCounter;
-//       plotCounter = config.counters.plotCounter;
-//       joinCounter = config.counters.joinCounter;
-//       boxIdCounter = config.counters.boxIdCounter;
-      
-//       const typeOrder = { influx: 1, table: 2, sql: 3, join: 4, plot: 5 };
-//       const sortedConfigs = config.boxes.sort((a, b) => typeOrder[a.type] - typeOrder[b.type]);
-//       let loadedBoxes = {};
-      
-//       sortedConfigs.forEach(boxConf => {
-//          let parentId = (boxConf.runArgs && boxConf.runArgs.parent) || null;
-//          let newBox = createBox(boxConf.title, boxConf.type, parentId,
-//            Object.assign({}, boxConf.runArgs, { left: boxConf.left, top: boxConf.top, title: boxConf.title, id: boxConf.id }));
-//          loadedBoxes[newBox.id] = newBox;
-//          if (parentId && loadedBoxes[parentId] && boxConf.type !== "join") {
-//            connectBoxes(loadedBoxes[parentId], newBox);
-//          }
-//          if (boxConf.type === "join") {
-//            if (boxConf.runArgs.leftParent && loadedBoxes[boxConf.runArgs.leftParent]) {
-//              connectBoxes(loadedBoxes[boxConf.runArgs.leftParent], newBox, "#008000");
-//            }
-//            if (boxConf.runArgs.rightParent && loadedBoxes[boxConf.runArgs.rightParent]) {
-//              connectBoxes(loadedBoxes[boxConf.runArgs.rightParent], newBox, "#008000");
-//            }
-//          }
-//       });
-//       updateConnectors();
-      
-//     } catch (err) {
-//       console.error("Error loading config:", err);
-//     }
-//   };
-//   reader.readAsText(file);
-//   event.target.value = "";
-// }
-
-function loadConfig(event) {
+async function loadConfig(event) {
   const file = event.target.files[0];
   if (!file) return;
-  
+
   showLoadingOverlay();
-  
+
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = async function (e) {
     try {
       const config = JSON.parse(e.target.result);
       console.log("Loaded config:", config);
-      
-      // Clear existing boxes and connectors.
+
+      // Clear existing boxes and connectors
       boxes.forEach(box => box.remove());
       boxes = [];
       connectors.forEach(conn => conn.line.remove());
       connectors = [];
       boxState = {};
-      
-      // Reset counters.
+
+      // Reset counters
       tableQueryCounter = config.counters.tableQueryCounter;
       sqlTransformCounter = config.counters.sqlTransformCounter;
       plotCounter = config.counters.plotCounter;
       joinCounter = config.counters.joinCounter;
       boxIdCounter = config.counters.boxIdCounter;
-      
-      // Identify root boxes (those with no parent).
-      let rootBoxes = config.boxes.filter(b => !b.runArgs || !b.runArgs.parent);
-      
-      // Process each root box sequentially.
-      let rootChain = rootBoxes.reduce((chain, boxConf) => {
-        return chain.then(() => {
-          return new Promise(resolve => {
-            let configState;
-            if (boxConf.type === "influx") {
-              configState = {
-                code: "Run to show available tables",
-                header: "Results: InfluxDB",
-                left: boxConf.left,
-                top: boxConf.top,
-                id: boxConf.id
-              };
-            } else {
-              configState = Object.assign({}, boxConf.runArgs, {
-                left: boxConf.left,
-                top: boxConf.top,
-                title: boxConf.title,
-                id: boxConf.id
-              });
+
+      // Track built boxes
+      let builtBoxes = new Set();
+
+      // Check if a box's dependencies are met
+      function dependenciesMet(boxConf) {
+        if (boxConf.type === "influx") {
+          return true; // Root box, no dependencies
+        } else if (boxConf.type === "join") {
+          const { leftParent, rightParent } = boxConf.runArgs;
+          return (
+            builtBoxes.has(leftParent) &&
+            builtBoxes.has(rightParent) &&
+            !boxState[leftParent].task_running &&
+            !boxState[rightParent].task_running
+          );
+        } else {
+          const parent = boxConf.runArgs.parent;
+          return builtBoxes.has(parent) && !boxState[parent].task_running;
+        }
+      }
+
+      // Build boxes until all are processed
+      let remainingBoxes = [...config.boxes];
+      while (remainingBoxes.length > 0) {
+        let builtThisRound = false;
+
+        for (let i = 0; i < remainingBoxes.length; i++) {
+          const boxConf = remainingBoxes[i];
+          if (dependenciesMet(boxConf)) {
+            // Prepare configuration state
+            let parentId = boxConf.runArgs.parent || null;
+            let configState = Object.assign({}, boxConf.runArgs, {
+              left: boxConf.left,
+              top: boxConf.top,
+              title: boxConf.title,
+              id: boxConf.id
+            });
+            console.log("Config state for", boxConf.id, configState);
+
+            // Create the box
+            let newBox = createBox(boxConf.title, boxConf.type, parentId, configState);
+
+            // Handle connections
+            if (boxConf.type === "join") {
+              boxState[newBox.id].leftParent = boxConf.runArgs.leftParent;
+              boxState[newBox.id].rightParent = boxConf.runArgs.rightParent;
+              let leftParentBox = document.getElementById(boxConf.runArgs.leftParent);
+              let rightParentBox = document.getElementById(boxConf.runArgs.rightParent);
+              if (leftParentBox && rightParentBox) {
+                connectBoxes(leftParentBox, newBox, "#008000");
+                connectBoxes(rightParentBox, newBox, "#008000");
+              }
+            } else if (parentId) {
+              let parentBox = document.getElementById(parentId);
+              if (parentBox) {
+                connectBoxes(parentBox, newBox);
+              }
             }
-            // Create the root box.
-            let newBox = createBox(boxConf.title, boxConf.type, null, configState);
+
+            // Run the query
             selectBox(newBox);
             runQueryForBox(newBox);
-            // Wait until the query completes.
-            waitForBoxQueryCompletion(newBox).then(() => {
-              // Build children of the root box.
-              buildBoxes(config.boxes, newBox.id).then(() => {
-                resolve();
-              });
-            });
-          });
-        });
-      }, Promise.resolve());
-      
-      rootChain.then(() => {
-        updateConnectors();
-        hideLoadingOverlay();
-        console.log("Configuration loaded successfully.");
-      });
-      
+
+            // Wait for query completion
+            await waitForBoxQueryCompletion(newBox);
+
+            // Mark as built
+            builtBoxes.add(newBox.id);
+            builtThisRound = true;
+
+            // Remove from remaining boxes
+            remainingBoxes.splice(i, 1);
+            i--; // Adjust index after removal
+          }
+        }
+
+        if (!builtThisRound) {
+          console.error("Cannot build remaining boxes; possible dependency cycle or missing parent.");
+          break;
+        }
+      }
+
+      updateConnectors();
+      hideLoadingOverlay();
+      console.log("Configuration loaded successfully.");
     } catch (err) {
       console.error("Error loading config:", err);
       hideLoadingOverlay();
     }
   };
-  
+
   reader.readAsText(file);
   event.target.value = "";
 }
@@ -758,64 +723,6 @@ function waitForBoxQueryCompletion(box) {
     };
     check();
   });
-}
-
-
-function buildBoxes(configBoxes, parentId) {
-  // Filter boxes that have this parentId.
-  let childBoxes = configBoxes.filter(b => (b.runArgs && b.runArgs.parent) === parentId);
-  
-  // Process each child sequentially.
-  return childBoxes.reduce((promiseChain, boxConf) => {
-    return promiseChain.then(() => {
-      return new Promise(resolve => {
-        // Build the configuration state.
-        let configState;
-        if (boxConf.type === "influx") {
-          configState = {
-            code: "Run to show available tables",
-            header: "Results: InfluxDB",
-            left: boxConf.left,
-            top: boxConf.top,
-            id: boxConf.id
-          };
-        } else {
-          // Force the parent's id from the current context
-          configState = Object.assign({}, boxConf.runArgs, {
-            left: boxConf.left,
-            top: boxConf.top,
-            title: boxConf.title,
-            id: boxConf.id,
-            parent: parentId  // Use the current parent's id!
-          });
-        }
-        
-        // Create the box.
-        let newBox = createBox(boxConf.title, boxConf.type, parentId, configState);
-        
-        // Update the box state to include the correct parent id.
-        boxState[newBox.id] = boxState[newBox.id] || {};
-        boxState[newBox.id].parent = parentId;
-        
-        // If a parent exists, connect the new box to its parent.
-        if (parentId && document.getElementById(parentId)) {
-          connectBoxes(document.getElementById(parentId), newBox);
-        }
-        
-        // Select the new box and run its query.
-        selectBox(newBox);
-        runQueryForBox(newBox);
-        
-        // Wait until the query completes based on our task_running flag.
-        waitForBoxQueryCompletion(newBox).then(() => {
-          // Process any children of this box.
-          buildBoxes(configBoxes, newBox.id).then(() => {
-            resolve();
-          });
-        });
-      });
-    });
-  }, Promise.resolve());
 }
 
 
