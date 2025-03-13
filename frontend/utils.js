@@ -1,10 +1,3 @@
-// utils.js - InfluxDB Code Workbook Utility Functions
-// ============================================================
-// This file contains all utility functions for enabling inline renaming,
-// dragging boxes, connecting boxes via SVG lines, handling dropdown menus,
-// exporting CSV, rendering charts, saving/loading configuration, and more.
-// ============================================================
-
 /*------------------------------------------------------------------------------
    Inline Rename and Drag Functions
 ------------------------------------------------------------------------------*/

@@ -1,15 +1,17 @@
 import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
-import query_tools
+import backend.query_tools as query_tools
 import pandas as pd
 from collections import OrderedDict
 from pandasql import sqldf
 from typing import List
-
-logging.basicConfig(level=logging.INFO)
+# Force override other handlers
+logging.basicConfig(level=logging.INFO, force=True)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="InfluxDB Query API")
@@ -22,7 +24,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-CREDENTIALS_PATH = os.path.join(os.getcwd(), "influxdb_credentials.txt")
+
+# Mount static files at /static
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+
+# Serve the index.html at the root path
+@app.get("/")
+def serve_index():
+    file_path = "/app/frontend/index.html"
+    logger.info(f"Attempting to serve file from: {file_path}")
+    if not os.path.exists(file_path):
+        logger.error(f"File not found: {file_path}")
+        raise HTTPException(status_code=404, detail="Index file not found")
+    logger.info("File found, serving index.html")
+    return FileResponse(file_path)
+
+
+# Use environment variable or default path
+CREDENTIALS_PATH = os.getenv("CREDENTIALS_PATH", os.path.join(
+    os.getcwd(), "backend/influxdb_credentials.txt"))
+
+# Check if credentials file exists at startup
+if not os.path.exists(CREDENTIALS_PATH):
+    logger.error(
+        f"Credentials file not found at {CREDENTIALS_PATH}. Please mount a file using Docker -v flag.")
+    # You could raise an exception here or handle it differently depending on your needs
 
 
 class QueryParams(BaseModel):
