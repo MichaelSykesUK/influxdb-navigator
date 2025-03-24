@@ -1,6 +1,6 @@
-# Vertical Data Navigator
+# InfluxDB Navigator
 
-Vertical Data Navigator is a web-based visual data workflow tool that lets you query, transform, join, and plot data interactively. Built with a modern frontend and a FastAPI–powered backend, it was designed to work with InfluxDB, enabling you to visually create and link query and transformation steps.
+InfluxDB Navigator is a web-based visual data workflow tool that lets you query, transform, join, and plot data interactively. Built with a modern frontend and a FastAPI–powered backend, it was designed to work with InfluxDB, enabling you to visually create and link query and transformation steps.
 
 ## Overview
 
