@@ -34,8 +34,9 @@ Each box can be connected with others via dynamic SVG connectors, forming an int
 ### Prerequisites
 
 - **Python 3.7+**
+- **Java 17**
 - **Node.js** (optional, if you wish to serve the frontend via a local HTTP server)
-- An **InfluxDB** instance with credentials set in a file named `influxdb_credentials.txt` at the project root.
+- An **InfluxDB** instance with credentials set in your environment file `.env`.
 
 ### Process
 
@@ -46,17 +47,24 @@ source venv/bin/activate   # On Windows use: venv\Scripts\activate
 - Install the python dependencies
 pip install -r requirements.txt
 
-- Configure InfluxDB Credentials:
-Ensure that your influxdb_credentials.txt file exists in the project root and contains the necessary details (token, host, database).
-
 - install node modules
 npm install
 
-- Run the FastAPI Backend Server:
-uvicorn main:app --reload
+- Configure InfluxDB Credentials to .env file:
+Ensure that your .env file exists and contains the necessary details (token, host, database):
 
-- Serve via a Local HTTP Server:
-npx http-server .
+token=your-influxdb-token
+host=your-influxdb-host
+database=your-database-name
+
+- Run the Server:
+uvicorn backend.api:app --reload
+
+- OR build docker file:
+sudo docker build -t influxdb-navigator:latest .
+sudo docker run --env-file .env -p 8000:8000 influxdb-navigator:latest
+
+- Access the app at http://localhost:8000/.
 
 ## Usage
 
@@ -78,25 +86,3 @@ Click the Run button to execute the query or transformation for the currently se
 
 ### Saving and Loading Configurations:
 Use the Save Config button to download your workflow as a JSON file, and the Load Config button to restore a saved configuration.
-
-
-
-
-### Running the App with Local Credentials
-
-1. Prepare an `influxdb_credentials.txt` file with your InfluxDB credentials:
-
-token=your-influxdb-token
-host=your-influxdb-host
-database=your-database-name
-
-
-2. Run the Docker container, mounting your credentials file:
-```
-docker run -it --rm -p 8000:8000 -v C:\path\influxdb_credentials.txt:/app/backend/influxdb_credentials.txt my-vertical-navigator-app
-```
-
-Replace /path/ with the actual path to your file.
-On Windows, use C:\path\ (e.g., C:\Users\YourName\credentials\influxdb_credentials.txt).
-
-Access the app at http://localhost:8000/.
