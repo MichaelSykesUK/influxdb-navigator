@@ -140,4 +140,32 @@ cython_debug/
 **node_modules/
 **old
 **influxdb_credentials.txt
-**other
+**.env
+**.bloop
+**target/
+
+# Cython debug symbols
+cython_debug/
+**node_modules/
+**old
+**influxdb_credentials.txt
+**.env
+**.bloop
+**target/
+**.env
+.env
+**ignore/
+
+# Metals and VS Code files
+.metals/
+.vscode/
+# SBT build files and project metadata
+influx-spark-api/.bsp/
+influx-spark-api/project/
+influx-spark-api/.bloop/
+influx-spark-api/target/
+influx-spark-api/metals.sbt
+# Ignore compiled Scala and Java files
+*.class
+*.jar
+*.log

@@ -1,5 +1,3 @@
-# query_tools.py
-
 import influxdb_client_3 as InfluxDBClient3
 from influxdb_client_3 import flight_client_options
 import certifi
@@ -15,21 +13,6 @@ def read_certificate():
     """Read the certificate file."""
     with open(certifi.where(), "r") as fh:
         return fh.read()
-
-
-def read_influxdb_credentials(credentials_path):
-    """Read InfluxDB credentials from a file."""
-    if not os.path.exists(credentials_path):
-        raise FileNotFoundError(
-            f"Credentials file '{credentials_path}' not found")
-
-    with open(credentials_path, "r") as f:
-        lines = f.read().splitlines()
-        return {
-            "host": lines[0].strip(),
-            "token": lines[1].strip(),
-            "database": lines[2].strip(),
-        }
 
 
 def create_influxdb_client(token, host, database, cert):

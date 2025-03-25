@@ -217,19 +217,6 @@ function toggleMaximize() {
 /*------------------------------------------------------------------------------
    Data and Dropdown Helpers
 ------------------------------------------------------------------------------*/
-function getParentColumns(plotBoxId) {
-  let plotBoxState = boxState[plotBoxId];
-  if (!plotBoxState) return;
-  let parentState = boxState[plotBoxState.parent];
-  if (parentState && parentState.data && parentState.data.length > 0) {
-    return Object.keys(parentState.data[0]);
-  }
-  return [];
-}
-
-/*------------------------------------------------------------------------------
-   Updated Dropdown Search Function
-------------------------------------------------------------------------------*/
 function addDropdownSearch(menu, searchInputClass, optionClass) {
   menu.innerHTML = "";
   let effectiveOptionSelector = optionClass;
@@ -261,9 +248,6 @@ function addDropdownSearch(menu, searchInputClass, optionClass) {
   }
 }
 
-/*------------------------------------------------------------------------------
-   Updated Dropdown Functions
-------------------------------------------------------------------------------*/
 function populateDropdown(menu, options, optionClass, button, callback) {
   options.forEach(option => {
     let opt = document.createElement("div");
@@ -415,21 +399,28 @@ function displayTable(dataArray) {
   updateTableHeader(dataArray, note);
 }
 
-/*------------------------------------------------------------------------------
-   Configuration Save/Load Functions
-------------------------------------------------------------------------------*/
+function updateTableHeader(dataArray, note = "") {
+  const header = document.getElementById("tableHeader");
+  const currentBox = document.querySelector(".box.selected");
+  if (!currentBox) {
+    header.textContent = "Results: No selection";
+    return;
+  }
+  const boxTitle = currentBox.querySelector(".box-title").textContent;
+  header.textContent = dataArray && dataArray.length > 0 ?
+    `Results: ${boxTitle} (${dataArray.length} Rows x ${Object.keys(dataArray[0]).length} Columns) ${note}` :
+    `Results: ${boxTitle}`;
+  boxState[currentBox.id].header = header.textContent;
+}
 
 function saveConfig() {
   const config = {
     boxes: boxes.map(box => {
       const state = boxState[box.id] || {};
       let runArgs = {};
-
       if (box.dataset.type === "influx") {
-        // Only persist the code (not any results or data)
         runArgs = { code: state.code || "Run to show available tables" };
       } else if (box.dataset.type === "table") {
-        // Persist only the query parameters (omit result/data)
         runArgs = {
           table: state.table || "",
           start_time: state.start_time || "",
@@ -464,7 +455,6 @@ function saveConfig() {
           rightParent: state.rightParent || null
         };
       }
-
       return {
         id: box.id,
         type: box.dataset.type,
@@ -476,8 +466,6 @@ function saveConfig() {
     }),
     counters: { tableQueryCounter, sqlTransformCounter, plotCounter, joinCounter, boxIdCounter }
   };
-
-
   const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json;charset=utf-8;' });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -491,59 +479,40 @@ function saveConfig() {
 async function loadConfig(event) {
   const file = event.target.files[0];
   if (!file) return;
-
   showLoadingOverlay();
-
   const reader = new FileReader();
   reader.onload = async function (e) {
     try {
       const config = JSON.parse(e.target.result);
       console.log("Loaded config:", config);
-
-      // Clear existing boxes and connectors
       boxes.forEach(box => box.remove());
       boxes = [];
       connectors.forEach(conn => conn.line.remove());
       connectors = [];
       boxState = {};
-
-      // Reset counters
       tableQueryCounter = config.counters.tableQueryCounter;
       sqlTransformCounter = config.counters.sqlTransformCounter;
       plotCounter = config.counters.plotCounter;
       joinCounter = config.counters.joinCounter;
       boxIdCounter = config.counters.boxIdCounter;
-
-      // Track built boxes
       let builtBoxes = new Set();
-
-      // Check if a box's dependencies are met
       function dependenciesMet(boxConf) {
         if (boxConf.type === "influx") {
-          return true; // Root box, no dependencies
+          return true;
         } else if (boxConf.type === "join") {
           const { leftParent, rightParent } = boxConf.runArgs;
-          return (
-            builtBoxes.has(leftParent) &&
-            builtBoxes.has(rightParent) &&
-            !boxState[leftParent].task_running &&
-            !boxState[rightParent].task_running
-          );
+          return (builtBoxes.has(leftParent) && builtBoxes.has(rightParent) && !boxState[leftParent].task_running && !boxState[rightParent].task_running);
         } else {
           const parent = boxConf.runArgs.parent;
           return builtBoxes.has(parent) && !boxState[parent].task_running;
         }
       }
-
-      // Build boxes until all are processed
       let remainingBoxes = [...config.boxes];
       while (remainingBoxes.length > 0) {
         let builtThisRound = false;
-
         for (let i = 0; i < remainingBoxes.length; i++) {
           const boxConf = remainingBoxes[i];
           if (dependenciesMet(boxConf)) {
-            // Prepare configuration state
             let parentId = boxConf.runArgs.parent || null;
             let configState = Object.assign({}, boxConf.runArgs, {
               left: boxConf.left,
@@ -552,11 +521,7 @@ async function loadConfig(event) {
               id: boxConf.id
             });
             console.log("Config state for", boxConf.id, configState);
-
-            // Create the box
             let newBox = createBox(boxConf.title, boxConf.type, parentId, configState);
-
-            // Handle connections
             if (boxConf.type === "join") {
               boxState[newBox.id].leftParent = boxConf.runArgs.leftParent;
               boxState[newBox.id].rightParent = boxConf.runArgs.rightParent;
@@ -572,30 +537,20 @@ async function loadConfig(event) {
                 connectBoxes(parentBox, newBox);
               }
             }
-
-            // Run the query
             selectBox(newBox);
             runQueryForBox(newBox);
-
-            // Wait for query completion
             await waitForBoxQueryCompletion(newBox);
-
-            // Mark as built
             builtBoxes.add(newBox.id);
             builtThisRound = true;
-
-            // Remove from remaining boxes
             remainingBoxes.splice(i, 1);
-            i--; // Adjust index after removal
+            i--;
           }
         }
-
         if (!builtThisRound) {
           console.error("Cannot build remaining boxes; possible dependency cycle or missing parent.");
           break;
         }
       }
-
       updateConnectors();
       hideLoadingOverlay();
       console.log("Configuration loaded successfully.");
@@ -604,19 +559,25 @@ async function loadConfig(event) {
       hideLoadingOverlay();
     }
   };
-
   reader.readAsText(file);
   event.target.value = "";
 }
 
+function waitForBoxQueryCompletion(box) {
+  return new Promise((resolve) => {
+    const check = () => {
+      if (boxState[box.id] && !boxState[box.id].task_running) {
+        resolve();
+      } else {
+        setTimeout(check, 100);
+      }
+    };
+    check();
+  });
+}
 
-/*------------------------------------------------------------------------------
-   SQL Editor Helpers
-------------------------------------------------------------------------------*/
 function updateSQLFromBasic() { 
-  if (!selectedBox || selectedBox.dataset.type !== "sql") { 
-    return;
-  }
+  if (!selectedBox || selectedBox.dataset.type !== "sql") return;
   const state = boxState[selectedBox.id];
   let selectClause = document.getElementById("selectDisplay").textContent.trim();
   if (!selectClause || selectClause === "Select columns") {
@@ -624,22 +585,18 @@ function updateSQLFromBasic() {
   } else {
     selectClause = selectClause.split(",").map(col => `"${col.trim()}"`).join(", ");
   }
-
   let whereClause = document.getElementById("whereDisplay").textContent.trim();
   let opText = document.getElementById("operatorDisplay").textContent.trim();
   const opMap = { "=": "=", "<": "<", ">": ">" };
   let whereOperator = opMap[opText] || "=";
   let whereValue = document.getElementById("whereValue").value.trim();
-
   state.whereClause = whereClause;
   state.whereOperator = whereOperator;
   state.whereValue = whereValue;
-
   let whereClauseCombined = "";
   if (whereClause && whereClause !== "Select columns" && whereValue) {
-    whereClauseCombined = `"${whereClause}" ${whereOperator} "${whereValue}"`;
+    whereClauseCombined = `${whereClause} ${whereOperator} '${whereValue}'`;
   }
-
   let additionalWhereRows = document.querySelectorAll("#additionalWhereContainer .where-condition");
   state.additionalWhere = [];
   additionalWhereRows.forEach(row => {
@@ -652,10 +609,9 @@ function updateSQLFromBasic() {
     state.additionalWhere.push({ column: col, operator: opSym, value: val, logic: opLabel });
     if (col && col !== "Select columns" && val) {
       if (whereClauseCombined !== "") { whereClauseCombined += " " + opLabel + " "; }
-      whereClauseCombined += `"${col}" ${opSym} "${val}"`;
+      whereClauseCombined += `${col} ${opSym} '${val}'`;
     }
   });
-
   let formattedSQL = "";
   if (whereClauseCombined) {
     formattedSQL = "SELECT " + selectClause + " FROM df\nWHERE " + whereClauseCombined.replace(/ (AND|OR) /g, "\n$1 ");
@@ -704,20 +660,6 @@ function updateTableHeader(dataArray, note = "") {
     `Results: ${boxTitle}`;
   boxState[currentBox.id].header = header.textContent;
 }
-
-function waitForBoxQueryCompletion(box) {
-  return new Promise((resolve) => {
-    const check = () => {
-      if (boxState[box.id] && !boxState[box.id].task_running) {
-        resolve();
-      } else {
-        setTimeout(check, 100);
-      }
-    };
-    check();
-  });
-}
-
 
 function showLoadingOverlay() {
   let overlay = document.getElementById("loadingOverlay");
