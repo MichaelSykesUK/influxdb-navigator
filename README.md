@@ -1,5 +1,7 @@
 # InfluxDB Navigator
+# InfluxDB Navigator
 
+InfluxDB Navigator is a web-based visual data workflow tool that lets you query, transform, join, and plot data interactively. Built with a modern frontend and a FastAPI–powered backend, it was designed to work with InfluxDB, enabling you to visually create and link query and transformation steps.
 InfluxDB Navigator is a web-based visual data workflow tool that lets you query, transform, join, and plot data interactively. Built with a modern frontend and a FastAPI–powered backend, it was designed to work with InfluxDB, enabling you to visually create and link query and transformation steps.
 
 ## Overview
@@ -34,6 +36,7 @@ Each box can be connected with others via dynamic SVG connectors, forming an int
 ### Prerequisites
 
 - **Python 3.7+**
+- **Java 17**
 - **Node.js** (optional, if you wish to serve the frontend via a local HTTP server)
 - An **InfluxDB** instance with credentials set in a file named `.env`
 
